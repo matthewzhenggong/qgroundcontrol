@@ -991,3 +991,8 @@ include(QGCSetup.pri)
 #
 
 include(QGCInstaller.pri)
+
+TRANSLATIONS = qgroundstation.ts
+
+DISTFILES += \
+    qgroundstation.ts
