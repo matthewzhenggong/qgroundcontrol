@@ -213,9 +213,29 @@ int main(int argc, char *argv[])
     QApplication::setWindowIcon(QIcon(":/res/resources/icons/qgroundcontrol.ico"));
 #endif /* Q_OS_LINUX */
 
+    QTranslator qtTranslator;
+    QString lang = "qt_" + QLocale::system().name();
+    if (qtTranslator.load(lang, QLibraryInfo::location(QLibraryInfo::TranslationsPath))
+            && app->installTranslator(&qtTranslator))
+    {
+        qDebug() << "Success to load translator " <<lang << " from " << QLibraryInfo::location(QLibraryInfo::TranslationsPath);
+    }
+    else
+    {
+        qWarning() << "Fail to load translator " <<lang << " from " << QLibraryInfo::location(QLibraryInfo::TranslationsPath);
+    }
+
     QTranslator myappTranslator;
-    myappTranslator.load("qgroundstation_" + QLocale::system().name());
-    app->installTranslator(&myappTranslator);
+    lang = "qgroundstation_" + QLocale::system().name();
+    if (myappTranslator.load(lang, QCoreApplication::applicationDirPath())
+            &&app->installTranslator(&myappTranslator))
+    {
+        qDebug() << "Success to load translator " <<lang << " from " << QCoreApplication::applicationDirPath();
+    }
+    else
+    {
+        qWarning() << "Fail to load translator " <<lang << " from " << QCoreApplication::applicationDirPath();
+    }
 
     // There appears to be a threading issue in qRegisterMetaType which can cause it to throw a qWarning
     // about duplicate type converters. This is caused by a race condition in the Qt code. Still working
