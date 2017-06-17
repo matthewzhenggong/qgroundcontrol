@@ -11,6 +11,7 @@
 #define AppSettings_H
 
 #include "SettingsGroup.h"
+#include "QGCMAVLink.h"
 
 class AppSettings : public SettingsGroup
 {
@@ -25,10 +26,31 @@ public:
     Q_PROPERTY(Fact* offlineEditingHoverSpeed           READ offlineEditingHoverSpeed           CONSTANT)
     Q_PROPERTY(Fact* batteryPercentRemainingAnnounce    READ batteryPercentRemainingAnnounce    CONSTANT)
     Q_PROPERTY(Fact* defaultMissionItemAltitude         READ defaultMissionItemAltitude         CONSTANT)
-    Q_PROPERTY(Fact* missionAutoLoadDir                 READ missionAutoLoadDir                 CONSTANT)
-    Q_PROPERTY(Fact* promptFlightTelemetrySave          READ promptFlightTelemetrySave          CONSTANT)
-    Q_PROPERTY(Fact* promptFlightTelemetrySaveNotArmed  READ promptFlightTelemetrySaveNotArmed  CONSTANT)
+    Q_PROPERTY(Fact* telemetrySave                      READ telemetrySave                      CONSTANT)
+    Q_PROPERTY(Fact* telemetrySaveNotArmed              READ telemetrySaveNotArmed              CONSTANT)
     Q_PROPERTY(Fact* audioMuted                         READ audioMuted                         CONSTANT)
+    Q_PROPERTY(Fact* virtualJoystick                    READ virtualJoystick                    CONSTANT)
+    Q_PROPERTY(Fact* appFontPointSize                   READ appFontPointSize                   CONSTANT)
+    Q_PROPERTY(Fact* indoorPalette                      READ indoorPalette                      CONSTANT)
+    Q_PROPERTY(Fact* showLargeCompass                   READ showLargeCompass                   CONSTANT)
+    Q_PROPERTY(Fact* savePath                           READ savePath                           CONSTANT)
+    Q_PROPERTY(Fact* autoLoadMissions                   READ autoLoadMissions                   CONSTANT)
+    Q_PROPERTY(Fact* mapboxToken                        READ mapboxToken                        CONSTANT)
+    Q_PROPERTY(Fact* esriToken                          READ esriToken                          CONSTANT)
+    Q_PROPERTY(Fact* defaultFirmwareType                READ defaultFirmwareType                CONSTANT)
+
+    Q_PROPERTY(QString missionSavePath      READ missionSavePath    NOTIFY savePathsChanged)
+    Q_PROPERTY(QString parameterSavePath    READ parameterSavePath  NOTIFY savePathsChanged)
+    Q_PROPERTY(QString telemetrySavePath    READ telemetrySavePath  NOTIFY savePathsChanged)
+    Q_PROPERTY(QString logSavePath          READ logSavePath        NOTIFY savePathsChanged)
+    Q_PROPERTY(QString videoSavePath        READ videoSavePath      NOTIFY savePathsChanged)
+
+    Q_PROPERTY(QString planFileExtension        MEMBER planFileExtension        CONSTANT)
+    Q_PROPERTY(QString missionFileExtension     MEMBER missionFileExtension     CONSTANT)
+    Q_PROPERTY(QString waypointsFileExtension   MEMBER waypointsFileExtension   CONSTANT)
+    Q_PROPERTY(QString parameterFileExtension   MEMBER parameterFileExtension   CONSTANT)
+    Q_PROPERTY(QString telemetryFileExtension   MEMBER telemetryFileExtension   CONSTANT)
+    Q_PROPERTY(QString logFileExtension         MEMBER logFileExtension         CONSTANT)
 
     Fact* offlineEditingFirmwareType        (void);
     Fact* offlineEditingVehicleType         (void);
@@ -36,10 +58,27 @@ public:
     Fact* offlineEditingHoverSpeed          (void);
     Fact* batteryPercentRemainingAnnounce   (void);
     Fact* defaultMissionItemAltitude        (void);
-    Fact* missionAutoLoadDir                (void);
-    Fact* promptFlightTelemetrySave         (void);
-    Fact* promptFlightTelemetrySaveNotArmed (void);
-    Fact* audioMuted (void);
+    Fact* telemetrySave                     (void);
+    Fact* telemetrySaveNotArmed             (void);
+    Fact* audioMuted                        (void);
+    Fact* virtualJoystick                   (void);
+    Fact* appFontPointSize                  (void);
+    Fact* indoorPalette                     (void);
+    Fact* showLargeCompass                  (void);
+    Fact* savePath                          (void);
+    Fact* autoLoadMissions                  (void);
+    Fact* mapboxToken                       (void);
+    Fact* esriToken                         (void);
+    Fact* defaultFirmwareType               (void);
+
+    QString missionSavePath     (void);
+    QString parameterSavePath   (void);
+    QString telemetrySavePath   (void);
+    QString logSavePath         (void);
+    QString videoSavePath         (void);
+
+    static MAV_AUTOPILOT offlineEditingFirmwareTypeFromFirmwareType(MAV_AUTOPILOT firmwareType);
+    static MAV_TYPE offlineEditingVehicleTypeFromVehicleType(MAV_TYPE vehicleType);
 
     static const char* appSettingsGroupName;
 
@@ -49,10 +88,42 @@ public:
     static const char* offlineEditingHoverSpeedSettingsName;
     static const char* batteryPercentRemainingAnnounceSettingsName;
     static const char* defaultMissionItemAltitudeSettingsName;
-    static const char* missionAutoLoadDirSettingsName;
-    static const char* promptFlightTelemetrySaveName;
-    static const char* promptFlightTelemetrySaveNotArmedName;
+    static const char* telemetrySaveName;
+    static const char* telemetrySaveNotArmedName;
     static const char* audioMutedName;
+    static const char* virtualJoystickName;
+    static const char* appFontPointSizeName;
+    static const char* indoorPaletteName;
+    static const char* showLargeCompassName;
+    static const char* savePathName;
+    static const char* autoLoadMissionsName;
+    static const char* mapboxTokenName;
+    static const char* esriTokenName;
+    static const char* defaultFirmwareTypeName;
+
+    // Application wide file extensions
+    static const char* parameterFileExtension;
+    static const char* planFileExtension;
+    static const char* missionFileExtension;
+    static const char* waypointsFileExtension;
+    static const char* fenceFileExtension;
+    static const char* rallyPointFileExtension;
+    static const char* telemetryFileExtension;
+    static const char* logFileExtension;
+
+    // Child directories of savePath for specific file types
+    static const char* parameterDirectory;
+    static const char* telemetryDirectory;
+    static const char* missionDirectory;
+    static const char* logDirectory;
+    static const char* videoDirectory;
+
+signals:
+    void savePathsChanged(void);
+
+private slots:
+    void _indoorPaletteChanged(void);
+    void _checkSavePathDirectories(void);
 
 private:
     SettingsFact* _offlineEditingFirmwareTypeFact;
@@ -61,10 +132,18 @@ private:
     SettingsFact* _offlineEditingHoverSpeedFact;
     SettingsFact* _batteryPercentRemainingAnnounceFact;
     SettingsFact* _defaultMissionItemAltitudeFact;
-    SettingsFact* _missionAutoLoadDirFact;
-    SettingsFact* _promptFlightTelemetrySave;
-    SettingsFact* _promptFlightTelemetrySaveNotArmed;
-    SettingsFact* _audioMuted;
+    SettingsFact* _telemetrySaveFact;
+    SettingsFact* _telemetrySaveNotArmedFact;
+    SettingsFact* _audioMutedFact;
+    SettingsFact* _virtualJoystickFact;
+    SettingsFact* _appFontPointSizeFact;
+    SettingsFact* _indoorPaletteFact;
+    SettingsFact* _showLargeCompassFact;
+    SettingsFact* _savePathFact;
+    SettingsFact* _autoLoadMissionsFact;
+    SettingsFact* _mapboxTokenFact;
+    SettingsFact* _esriTokenFact;
+    SettingsFact* _defaultFirmwareTypeFact;
 };
 
 #endif

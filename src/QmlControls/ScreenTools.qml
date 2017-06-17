@@ -1,6 +1,6 @@
 pragma Singleton
 
-import QtQuick 2.4
+import QtQuick 2.3
 import QtQuick.Controls 1.2
 import QtQuick.Window 2.2
 
@@ -60,17 +60,32 @@ Item {
     property bool isTinyScreen:     (Screen.width / Screen.pixelDensity) < 120 // 120mm
     property bool isShortScreen:    ScreenToolsController.isMobile && ((Screen.height / Screen.width) < 0.6) // Nexus 7 for example
 
+    readonly property real minTouchMillimeters: 10      ///< Minimum touch size in millimeters
+    property real minTouchPixels:               0       ///< Minimum touch size in pixels
+
+    // The implicit heights/widths for our custom control set
+    property real implicitButtonWidth:              Math.round(defaultFontPixelWidth *  (isMobile ? 7.0 : 5.0))
+    property real implicitButtonHeight:             Math.round(defaultFontPixelHeight * (isMobile ? 2.0 : 1.6))
+    property real implicitCheckBoxHeight:           Math.round(defaultFontPixelHeight * (isMobile ? 2.0 : 1.0))
+    property real implicitRadioButtonHeight:        implicitCheckBoxHeight
+    property real implicitTextFieldHeight:          Math.round(defaultFontPixelHeight * (isMobile ? 2.0 : 1.6))
+    property real implicitComboBoxHeight:           Math.round(defaultFontPixelHeight * (isMobile ? 2.0 : 1.6))
+    property real implicitComboBoxWidth:            Math.round(defaultFontPixelWidth *  (isMobile ? 7.0 : 5.0))
+    property real implicitSliderHeight:             isMobile ? Math.max(defaultFontPixelHeight, minTouchPixels) : defaultFontPixelHeight
+    property real checkBoxIndicatorSize:            Math.round(defaultFontPixelHeight * (isMobile ? 1.5 : 1.0))
+    property real radioButtonIndicatorSize:         checkBoxIndicatorSize
+
     readonly property string normalFontFamily:      "opensans"
     readonly property string demiboldFontFamily:    "opensans-demibold"
-
+    readonly property string fixedFontFamily:       ScreenToolsController.fixedFontFamily
     /* This mostly works but for some reason, reflowWidths() in SetupView doesn't change size.
        I've disabled (in release builds) until I figure out why. Changes require a restart for now.
     */
     Connections {
-        target: QGroundControl
-        onBaseFontPointSizeChanged: {
+        target: QGroundControl.settingsManager.appSettings.appFontPointSize
+        onValueChanged: {
             if(ScreenToolsController.isDebug)
-                _setBasePointSize(QGroundControl.baseFontPointSize)
+                _setBasePointSize(QGroundControl.settingsManager.appSettings.appFontPointSize.value)
         }
     }
 
@@ -93,7 +108,8 @@ Item {
         smallFontPointSize      = defaultFontPointSize  * _screenTools.smallFontPointRatio
         mediumFontPointSize     = defaultFontPointSize  * _screenTools.mediumFontPointRatio
         largeFontPointSize      = defaultFontPointSize  * _screenTools.largeFontPointRatio
-        toolbarHeight           = defaultFontPixelHeight * 3 * QGroundControl.corePlugin.options.toolbarHeightMultiplier
+        minTouchPixels          = Math.round(minTouchMillimeters * Screen.pixelDensity)
+        toolbarHeight           = isMobile ? minTouchPixels : defaultFontPixelHeight * 3
     }
 
     Text {
@@ -108,12 +124,10 @@ Item {
         property real   fontWidth:    contentWidth
         property real   fontHeight:   contentHeight
         Component.onCompleted: {
-            var baseSize = QGroundControl.corePlugin.options.defaultFontPointSize
-            if(baseSize == 0.0) {
-                baseSize = QGroundControl.baseFontPointSize;
-            }
+            var _appFontPointSizeFact = QGroundControl.settingsManager.appSettings.appFontPointSize
+            var baseSize = _appFontPointSizeFact.value
             //-- If this is the first time (not saved in settings)
-            if(baseSize < 6 || baseSize > 48) {
+            if(baseSize < _appFontPointSizeFact.min || baseSize > _appFontPointSizeFact.max) {
                 //-- Init base size base on the platform
                 if(ScreenToolsController.isMobile) {
                     //-- Check iOS really tiny screens (iPhone 4s/5/5s)
@@ -123,7 +137,7 @@ Item {
                             // we will just drop point size to make things fit. Correct size not yet determined.
                             baseSize = 12;  // This will be lowered in a future pull
                         } else {
-                            baseSize = 12;
+                            baseSize = 14;
                         }
                     } else if((Screen.width / Screen.pixelDensity) < 120) {
                         baseSize = 11;
@@ -142,7 +156,7 @@ Item {
                     else
                         baseSize = _defaultFont.font.pointSize;
                 }
-                QGroundControl.baseFontPointSize = baseSize
+                _appFontPointSizeFact.value = baseSize
                 //-- Release build doesn't get signal
                 if(!ScreenToolsController.isDebug)
                     _screenTools._setBasePointSize(baseSize);

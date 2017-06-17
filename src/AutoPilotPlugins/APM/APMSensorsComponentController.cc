@@ -24,16 +24,11 @@ QGC_LOGGING_CATEGORY(APMSensorsComponentControllerVerboseLog, "APMSensorsCompone
 const char* APMSensorsComponentController::_compassCalFitnessParam = "COMPASS_CAL_FIT";
 
 APMSensorsComponentController::APMSensorsComponentController(void)
-    : _statusLog(NULL)
+    : _sensorsComponent(NULL)
+    , _statusLog(NULL)
     , _progressBar(NULL)
-    , _compassButton(NULL)
-    , _accelButton(NULL)
-    , _compassMotButton(NULL)
-    , _levelButton(NULL)
-    , _calibratePressureButton(NULL)
     , _nextButton(NULL)
     , _cancelButton(NULL)
-    , _setOrientationsButton(NULL)
     , _showOrientationCalArea(false)
     , _calTypeInProgress(CalTypeNone)
     , _orientationCalDownSideDone(false)
@@ -68,8 +63,19 @@ APMSensorsComponentController::APMSensorsComponentController(void)
 
     APMAutoPilotPlugin * apmPlugin = qobject_cast<APMAutoPilotPlugin*>(_vehicle->autopilotPlugin());
 
-    _sensorsComponent = apmPlugin->sensorsComponent();
-    connect(_sensorsComponent, &VehicleComponent::setupCompleteChanged, this, &APMSensorsComponentController::setupNeededChanged);
+    // Find the sensors component
+    foreach (const QVariant& varVehicleComponent, apmPlugin->vehicleComponents()) {
+        _sensorsComponent = qobject_cast<APMSensorsComponent*>(varVehicleComponent.value<VehicleComponent*>());
+        if (_sensorsComponent) {
+            break;
+        }
+    }
+
+    if (_sensorsComponent) {
+        connect(_sensorsComponent, &VehicleComponent::setupCompleteChanged, this, &APMSensorsComponentController::setupNeededChanged);
+    } else {
+        qWarning() << "Sensors component is missing";
+    }
 
     connect(qgcApp()->toolbox()->mavlinkProtocol(), &MAVLinkProtocol::messageReceived, this, &APMSensorsComponentController::_mavlinkMessageReceived);
 }
@@ -98,12 +104,7 @@ void APMSensorsComponentController::_startLogCalibration(void)
     
     connect(_uas, &UASInterface::textMessageReceived, this, &APMSensorsComponentController::_handleUASTextMessage);
     
-    _compassButton->setEnabled(false);
-    _accelButton->setEnabled(false);
-    _compassMotButton->setEnabled(false);
-    _levelButton->setEnabled(false);
-    _calibratePressureButton->setEnabled(false);
-    _setOrientationsButton->setEnabled(false);
+    emit setAllCalButtonsEnabled(false);
     if (_calTypeInProgress == CalTypeAccel || _calTypeInProgress == CalTypeCompassMot) {
         _nextButton->setEnabled(true);
     }
@@ -112,13 +113,9 @@ void APMSensorsComponentController::_startLogCalibration(void)
 
 void APMSensorsComponentController::_startVisualCalibration(void)
 {
-    _compassButton->setEnabled(false);
-    _accelButton->setEnabled(false);
-    _compassMotButton->setEnabled(false);
-    _levelButton->setEnabled(false);
-    _calibratePressureButton->setEnabled(false);
-    _setOrientationsButton->setEnabled(false);
+    emit setAllCalButtonsEnabled(false);
     _cancelButton->setEnabled(true);
+    _nextButton->setEnabled(false);
 
     _resetInternalState();
     
@@ -157,12 +154,7 @@ void APMSensorsComponentController::_stopCalibration(APMSensorsComponentControll
 
     disconnect(_uas, &UASInterface::textMessageReceived, this, &APMSensorsComponentController::_handleUASTextMessage);
     
-    _compassButton->setEnabled(true);
-    _accelButton->setEnabled(true);
-    _compassMotButton->setEnabled(true);
-    _levelButton->setEnabled(true);
-    _calibratePressureButton->setEnabled(true);
-    _setOrientationsButton->setEnabled(true);
+    emit setAllCalButtonsEnabled(true);
     _nextButton->setEnabled(false);
     _cancelButton->setEnabled(false);
 
@@ -590,15 +582,13 @@ void APMSensorsComponentController::cancelCalibration(void)
 void APMSensorsComponentController::nextClicked(void)
 {
     mavlink_message_t       msg;
-    mavlink_command_ack_t   ack;
-
-    ack.command = 0;
-    ack.result = 1;
-    mavlink_msg_command_ack_encode_chan(qgcApp()->toolbox()->mavlinkProtocol()->getSystemId(),
-                                        qgcApp()->toolbox()->mavlinkProtocol()->getComponentId(),
-                                        _vehicle->priorityLink()->mavlinkChannel(),
-                                        &msg,
-                                        &ack);
+    mavlink_msg_command_ack_pack_chan(qgcApp()->toolbox()->mavlinkProtocol()->getSystemId(),
+                                      qgcApp()->toolbox()->mavlinkProtocol()->getComponentId(),
+                                      _vehicle->priorityLink()->mavlinkChannel(),
+                                      &msg,
+                                      0,    // command
+                                      1,    // result
+                                      0);   // progress
 
     _vehicle->sendMessageOnLink(_vehicle->priorityLink(), msg);
 
@@ -668,7 +658,7 @@ void APMSensorsComponentController::_handleMagCalProgress(mavlink_message_t& mes
         mavlink_msg_mag_cal_progress_decode(&message, &magCalProgress);
 
         qCDebug(APMSensorsComponentControllerVerboseLog) << "_handleMagCalProgress id:mask:pct"
-                                                  << magCalProgress.compass_id << magCalProgress.cal_mask << magCalProgress.completion_pct;
+                                                         << magCalProgress.compass_id << magCalProgress.cal_mask << magCalProgress.completion_pct;
 
         // How many compasses are we calibrating?
         int compassCalCount = 0;
@@ -696,7 +686,7 @@ void APMSensorsComponentController::_handleMagCalReport(mavlink_message_t& messa
         mavlink_msg_mag_cal_report_decode(&message, &magCalReport);
 
         qCDebug(APMSensorsComponentControllerVerboseLog) << "_handleMagCalReport id:mask:status:fitness"
-                                                  << magCalReport.compass_id << magCalReport.cal_mask << magCalReport.cal_status << magCalReport.fitness;
+                                                         << magCalReport.compass_id << magCalReport.cal_mask << magCalReport.cal_status << magCalReport.fitness;
 
         bool additionalCompassCompleted = false;
         if (magCalReport.compass_id < 3 && !_rgCompassCalComplete[magCalReport.compass_id]) {

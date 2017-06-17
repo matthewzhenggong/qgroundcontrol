@@ -42,7 +42,8 @@ public:
             AutoPilotStackPX4,
             AutoPilotStackAPM,
             PX4Flow,
-            ThreeDRRadio
+            ThreeDRRadio,
+            SingleFirmwareMode
         } AutoPilotStackType_t;
 
         typedef enum {
@@ -63,6 +64,7 @@ public:
             CopterFirmware,
             PlaneFirmware,
             RoverFirmware,
+            SubFirmware,
             DefaultVehicleFirmware
         } FirmwareVehicleType_t;
 
@@ -120,6 +122,9 @@ public:
     Q_INVOKABLE void flash(AutoPilotStackType_t stackType,
                            FirmwareType_t firmwareType = StableFirmware,
                            FirmwareVehicleType_t vehicleType = DefaultVehicleFirmware );
+
+    /// Called to flash when upgrade is running in singleFirmwareMode
+    Q_INVOKABLE void flashSingleFirmwareMode(void);
 
     Q_INVOKABLE FirmwareVehicleType_t vehicleTypeFromVersionIndex(int index);
     
@@ -190,11 +195,16 @@ private:
     QHash<FirmwareIdentifier, QString>* _firmwareHashForBoardId(int boardId);
     void _determinePX4StableVersion(void);
 
+    QString _singleFirmwareURL;
+    bool    _singleFirmwareMode;
     QString _portName;
     QString _portDescription;
 
     // firmware hashes
+    QHash<FirmwareIdentifier, QString> _rgPX4FMUV5Firmware;
+    QHash<FirmwareIdentifier, QString> _rgPX4FMUV4PROFirmware;
     QHash<FirmwareIdentifier, QString> _rgPX4FMUV4Firmware;
+    QHash<FirmwareIdentifier, QString> _rgPX4FMUV3Firmware;
     QHash<FirmwareIdentifier, QString> _rgPX4FMUV2Firmware;
     QHash<FirmwareIdentifier, QString> _rgAeroCoreFirmware;
     QHash<FirmwareIdentifier, QString> _rgPX4FMUV1Firmware;
@@ -202,6 +212,7 @@ private:
     QHash<FirmwareIdentifier, QString> _rgMindPXFMUV2Firmware;
     QHash<FirmwareIdentifier, QString> _rgTAPV1Firmware;
     QHash<FirmwareIdentifier, QString> _rgASCV1Firmware;
+    QHash<FirmwareIdentifier, QString> _rgCrazyflie2Firmware;
     QHash<FirmwareIdentifier, QString> _rgPX4FLowFirmware;
     QHash<FirmwareIdentifier, QString> _rg3DRRadioFirmware;
 

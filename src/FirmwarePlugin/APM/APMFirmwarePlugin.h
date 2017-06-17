@@ -95,16 +95,15 @@ public:
     QObject*            loadParameterMetaData           (const QString& metaDataFile);
     GeoFenceManager*    newGeoFenceManager              (Vehicle* vehicle) { return new APMGeoFenceManager(vehicle); }
     RallyPointManager*  newRallyPointManager            (Vehicle* vehicle) { return new APMRallyPointManager(vehicle); }
-    QString             brandImage                      (const Vehicle* vehicle) const { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/APM/BrandImage"); }
-    QString             missionFlightMode               (void) final;
-    QString             rtlFlightMode                   (void) final;
+    QString             brandImageIndoor                (const Vehicle* vehicle) const { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/APM/BrandImage"); }
+    QString             brandImageOutdoor               (const Vehicle* vehicle) const { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/APM/BrandImage"); }
 
 protected:
     /// All access to singleton is through stack specific implementation
     APMFirmwarePlugin(void);
     void setSupportedModes(QList<APMCustomMode> supportedModes);
 
-    bool _coaxialMotors;
+    bool                _coaxialMotors;
 
 private slots:
     void _artooSocketError(QAbstractSocket::SocketError socketError);
@@ -121,13 +120,24 @@ private:
     void _handleOutgoingParamSet(Vehicle* vehicle, LinkInterface* outgoingLink, mavlink_message_t* message);
     void _soloVideoHandshake(Vehicle* vehicle);
 
-    bool                    _textSeverityAdjustmentNeeded;
+    // Any instance data here must be global to all vehicles
+    // Vehicle specific data should go into APMFirmwarePluginInstanceData
+
     QList<APMCustomMode>    _supportedModes;
-    QMap<QString, QTime>    _noisyPrearmMap;
 
-    static const char*  _artooIP;
-    static const int    _artooVideoHandshakePort;
+    static const char*      _artooIP;
+    static const int        _artooVideoHandshakePort;
+};
 
+class APMFirmwarePluginInstanceData : public QObject
+{
+    Q_OBJECT
+
+public:
+    APMFirmwarePluginInstanceData(QObject* parent = NULL);
+
+    bool                    textSeverityAdjustmentNeeded;
+    QMap<QString, QTime>    noisyPrearmMap;
 };
 
 #endif

@@ -7,8 +7,8 @@
  *
  ****************************************************************************/
 
-import QtQuick          2.4
-import QtQuick.Controls 1.3
+import QtQuick          2.3
+import QtQuick.Controls 1.2
 import QtQuick.Layouts  1.2
 import QtPositioning    5.3
 
@@ -200,11 +200,11 @@ DropButton {
             QGCButton {
                 text:               qsTr("Current Location")
                 Layout.fillWidth:   true
-                enabled:            mainWindow.gcsPosition.isValid && !followVehicleCheckBox.checked
+                enabled:            map.gcsPosition ? map.gcsPosition.isValid && !followVehicleCheckBox.checked : false
 
                 onClicked: {
                     dropButton.hideDropDown()
-                    map.center = mainWindow.gcsPosition
+                    map.center = map.gcsPosition
                 }
             }
 

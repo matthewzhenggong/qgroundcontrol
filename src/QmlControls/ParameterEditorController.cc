@@ -14,9 +14,11 @@
 #include "ParameterEditorController.h"
 #include "QGCApplication.h"
 #include "ParameterManager.h"
+#include "SettingsManager.h"
+#include "AppSettings.h"
 
 #ifndef __mobile__
-#include "QGCFileDialog.h"
+#include "QGCQFileDialog.h"
 #include "QGCMapRCToParamDialog.h"
 #include "MainWindow.h"
 #endif
@@ -87,17 +89,13 @@ QStringList ParameterEditorController::searchParametersForComponent(int componen
 
 void ParameterEditorController::clearRCToParam(void)
 {
-    Q_ASSERT(_uas);
-    _uas->unsetRCToParameterMap();
+    if (_uas) {
+        _uas->unsetRCToParameterMap();
+    }
 }
 
 void ParameterEditorController::saveToFile(const QString& filename)
 {
-    if (!_autopilot) {
-        qWarning() << "Internal error _autopilot==NULL";
-        return;
-    }
-
     if (!filename.isEmpty()) {
         QFile file(filename);
         
@@ -112,28 +110,10 @@ void ParameterEditorController::saveToFile(const QString& filename)
     }
 }
 
-void ParameterEditorController::saveToFilePicker(void)
-{
-#ifndef __mobile__
-    QString fileName = QGCFileDialog::getSaveFileName(MainWindow::instance(),
-                                                      "Save Parameters",
-                                                      QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
-                                                      "Parameter Files (*.params)",
-                                                      "params",
-                                                      true);
-    saveToFile(fileName);
-#endif
-}
-
 void ParameterEditorController::loadFromFile(const QString& filename)
 {
     QString errors;
     
-    if (!_autopilot) {
-        qWarning() << "Internal error _autopilot==NULL";
-        return;
-    }
-
     if (!filename.isEmpty()) {
         QFile file(filename);
         
@@ -152,17 +132,6 @@ void ParameterEditorController::loadFromFile(const QString& filename)
     }
 }
 
-void ParameterEditorController::loadFromFilePicker(void)
-{
-#ifndef __mobile__
-    QString fileName = QGCFileDialog::getOpenFileName(MainWindow::instance(),
-                                                      "Load Parameters",
-                                                      QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
-                                                      "Parameter Files (*.params);;All Files (*)");
-    loadFromFile(fileName);
-#endif
-}
-
 void ParameterEditorController::refresh(void)
 {
     _vehicle->parameterManager()->refreshAllParameters();
@@ -179,9 +148,10 @@ void ParameterEditorController::setRCToParam(const QString& paramName)
 #ifdef __mobile__
     Q_UNUSED(paramName)
 #else
-    Q_ASSERT(_uas);
-    QGCMapRCToParamDialog * d = new QGCMapRCToParamDialog(paramName, _uas, qgcApp()->toolbox()->multiVehicleManager(), MainWindow::instance());
-    d->exec();
+    if (_uas) {
+        QGCMapRCToParamDialog * d = new QGCMapRCToParamDialog(paramName, _uas, qgcApp()->toolbox()->multiVehicleManager(), MainWindow::instance());
+        d->exec();
+    }
 #endif
 }
 

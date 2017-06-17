@@ -40,12 +40,11 @@
 #include "LogCompressor.h"
 #include "UAS.h"
 #include "QGCImageProvider.h"
+#include "QGCCorePlugin.h"
 
 #ifndef __mobile__
 #include "Linecharts.h"
 #include "QGCUASFileViewMulti.h"
-#include "UASQuickView.h"
-#include "QGCTabbedInfoView.h"
 #include "CustomCommandWidget.h"
 #include "QGCDockWidget.h"
 #include "HILDockWidget.h"
@@ -68,7 +67,7 @@ enum DockWidgetTypes {
     MAVLINK_INSPECTOR,
     CUSTOM_COMMAND,
     ONBOARD_FILES,
-    INFO_VIEW,
+    DEPRECATED_WIDGET,
     HIL_CONFIG,
     ANALYZE
 };
@@ -77,7 +76,7 @@ static const char *rgDockWidgetNames[] = {
     "MAVLink Inspector",
     "Custom Command",
     "Onboard Files",
-    "Info View",
+    "Deprecated Widget",
     "HIL Config",
     "Analyze"
 };
@@ -91,10 +90,7 @@ static MainWindow* _instance = NULL;   ///< @brief MainWindow singleton
 
 MainWindow* MainWindow::_create()
 {
-    Q_ASSERT(_instance == NULL);
     new MainWindow();
-    // _instance is set in constructor
-    Q_ASSERT(_instance);
     return _instance;
 }
 
@@ -117,7 +113,6 @@ MainWindow::MainWindow()
     , _mainQmlWidgetHolder(NULL)
     , _forceClose(false)
 {
-    Q_ASSERT(_instance == NULL);
     _instance = this;
 
     //-- Load fonts
@@ -174,6 +169,9 @@ MainWindow::MainWindow()
     connect(qmlTestAction, &QAction::triggered, this, &MainWindow::_showQmlTestWidget);
     _ui.menuWidgets->addAction(qmlTestAction);
 #endif
+
+    connect(qgcApp()->toolbox()->corePlugin(), &QGCCorePlugin::showAdvancedUIChanged, this, &MainWindow::_showAdvancedUIChanged);
+    _showAdvancedUIChanged(qgcApp()->toolbox()->corePlugin()->showAdvancedUI());
 
     // Status Bar
     setStatusBar(new QStatusBar(this));
@@ -333,7 +331,7 @@ void MainWindow::_showDockWidget(const QString& name, bool show)
     // Create the inner widget if we need to
     if (!_mapName2DockWidget.contains(name)) {
         if(!_createInnerDockWidget(name)) {
-            qWarning() << "Trying to load non existing widget:" << name;
+            qWarning() << "Trying to load non existent widget:" << name;
             return;
         }
     }
@@ -367,12 +365,6 @@ bool MainWindow::_createInnerDockWidget(const QString& widgetName)
             case ANALYZE:
                 widget = new Linecharts(widgetName, action, mavlinkDecoder, this);
                 break;
-            case INFO_VIEW:
-                widget= new QGCTabbedInfoView(widgetName, action, this);
-                break;
-        }
-        if(action->data().toInt() == INFO_VIEW) {
-            qobject_cast<QGCTabbedInfoView*>(widget)->addSource(mavlinkDecoder);
         }
         if(widget) {
             _mapName2DockWidget[widgetName] = widget;
@@ -557,4 +549,14 @@ void MainWindow::_storeVisibleWidgetsSettings(void)
 QObject* MainWindow::rootQmlObject(void)
 {
     return _mainQmlWidgetHolder->getRootObject();
+}
+
+void MainWindow::_showAdvancedUIChanged(bool advanced)
+{
+    if (advanced) {
+        menuBar()->addMenu(_ui.menuFile);
+        menuBar()->addMenu(_ui.menuWidgets);
+    } else {
+        menuBar()->clear();
+    }
 }

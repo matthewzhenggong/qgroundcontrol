@@ -7,8 +7,8 @@
  *
  ****************************************************************************/
 
-import QtQuick          2.4
-import QtQuick.Controls 1.3
+import QtQuick          2.3
+import QtQuick.Controls 1.2
 import QtQuick.Layouts  1.2
 
 import QGroundControl               1.0
@@ -33,7 +33,7 @@ QGCListView {
     delegate: Rectangle {
         width:      parent.width
         height:     innerColumn.y + innerColumn.height + _margin
-        color:      qgcPal.buttonHighlight
+        color:      qgcPal.missionItemEditor
         opacity:    0.8
         radius:     _margin
 

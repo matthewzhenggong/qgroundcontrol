@@ -8,7 +8,7 @@
  ****************************************************************************/
 
 
-import QtQuick          2.5
+import QtQuick          2.3
 import QtQuick.Controls 1.2
 import QtQuick.Dialogs  1.2
 
@@ -418,7 +418,6 @@ SetupPage {
 
                 QGCButton {
                     text:       qsTr("Copy Trims")
-                    visible:    QGroundControl.multiVehicleManager.activeVehicle.px4Firmware
                     onClicked:  showDialog(copyTrimsDialogComponent, dialogTitle, radioPage.showDialogDefaultWidth, StandardButton.Ok | StandardButton.Cancel)
                 }
 

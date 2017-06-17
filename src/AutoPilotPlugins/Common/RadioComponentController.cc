@@ -429,7 +429,7 @@ void RadioComponentController::_inputStickDetect(enum rcCalFunctions function, i
                 _rgChannelInfo[channel].rcMax = value;
             }
             
-            _signalAllAttiudeValueChanges();
+            _signalAllAttitudeValueChanges();
             
             _advanceState();
         }
@@ -582,7 +582,7 @@ void RadioComponentController::_resetInternalCalibrationValues(void)
         _rgFunctionChannelMapping[i] = _chanMax();
     }
     
-    _signalAllAttiudeValueChanges();
+    _signalAllAttitudeValueChanges();
 }
 
 /// @brief Sets internal calibration values from the stored parameters
@@ -646,7 +646,7 @@ void RadioComponentController::_setInternalCalibrationValuesFromParameters(void)
             if (paramFact) {
                 paramChannel = paramFact->rawValue().toInt();
 
-                if (paramChannel != 0) {
+                if (paramChannel > 0 && paramChannel <= _chanMax()) {
                     _rgFunctionChannelMapping[i] = paramChannel - 1;
                     _rgChannelInfo[paramChannel - 1].function = (enum rcCalFunctions)i;
                 }
@@ -654,7 +654,7 @@ void RadioComponentController::_setInternalCalibrationValuesFromParameters(void)
         }
     }
     
-    _signalAllAttiudeValueChanges();
+    _signalAllAttitudeValueChanges();
 }
 
 void RadioComponentController::spektrumBindMode(int mode)
@@ -1023,7 +1023,7 @@ void RadioComponentController::setTransmitterMode(int mode)
     }
 }
 
-void RadioComponentController::_signalAllAttiudeValueChanges(void)
+void RadioComponentController::_signalAllAttitudeValueChanges(void)
 {
     emit rollChannelMappedChanged(rollChannelMapped());
     emit pitchChannelMappedChanged(pitchChannelMapped());

@@ -79,15 +79,16 @@ public:
 
     bool supportsJSButton(void);
 
-    bool supportsCalibratePressure(void);
-
     bool supportsMotorInterference(void);
 
-    QString brandImage(const Vehicle* vehicle) const { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/APM/BrandImageSub"); }
+    QString brandImageIndoor(const Vehicle* vehicle) const { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/APM/BrandImageSub"); }
+    QString brandImageOutdoor(const Vehicle* vehicle) const { Q_UNUSED(vehicle); return QStringLiteral("/qmlimages/APM/BrandImageSub"); }
     const FirmwarePlugin::remapParamNameMajorVersionMap_t& paramNameRemapMajorVersionMap(void) const final { return _remapParamName; }
     int remapParamNameHigestMinorVersionNumber(int majorVersionNumber) const final;
+    const QVariantList& toolBarIndicators(const Vehicle* vehicle) final;
 
 private:
+    QVariantList _toolBarIndicators;
     static bool _remapParamNameIntialized;
     static FirmwarePlugin::remapParamNameMajorVersionMap_t  _remapParamName;
 };

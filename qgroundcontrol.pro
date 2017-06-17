@@ -29,6 +29,49 @@ DebugBuild {
     DESTDIR  = $${OUT_PWD}/release
 }
 
+#
+# OS Specific settings
+#
+
+MacBuild {
+    QMAKE_INFO_PLIST    = Custom-Info.plist
+    ICON                = $${BASEDIR}/resources/icons/macx.icns
+    OTHER_FILES        += Custom-Info.plist
+    equals(QT_MAJOR_VERSION, 5) | greaterThan(QT_MINOR_VERSION, 5) {
+        LIBS           += -framework ApplicationServices
+    }
+}
+
+iOSBuild {
+    BUNDLE.files        = $$files($$PWD/ios/AppIcon*.png) $$PWD/ios/QGCLaunchScreen.xib
+    QMAKE_BUNDLE_DATA  += BUNDLE
+    LIBS               += -framework AVFoundation
+    #-- Info.plist (need an "official" one for the App Store)
+    ForAppStore {
+        message(App Store Build)
+        #-- Create official, versioned Info.plist
+        APP_STORE = $$system(cd $${BASEDIR} && $${BASEDIR}/tools/update_ios_version.sh $${BASEDIR}/ios/iOSForAppStore-Info-Source.plist $${BASEDIR}/ios/iOSForAppStore-Info.plist)
+        APP_ERROR = $$find(APP_STORE, "Error")
+        count(APP_ERROR, 1) {
+            error("Error building .plist file. 'ForAppStore' builds are only possible through the official build system.")
+        }
+        QMAKE_INFO_PLIST  = $${BASEDIR}/ios/iOSForAppStore-Info.plist
+        OTHER_FILES      += $${BASEDIR}/ios/iOSForAppStore-Info.plist
+    } else {
+        QMAKE_INFO_PLIST  = $${BASEDIR}/ios/iOS-Info.plist
+        OTHER_FILES      += $${BASEDIR}/ios/iOS-Info.plist
+    }
+    #-- TODO: Add iTunesArtwork
+}
+
+LinuxBuild {
+    CONFIG  += qesp_linux_udev
+}
+
+WindowsBuild {
+    RC_ICONS = resources/icons/qgroundcontrol.ico
+}
+
 # Load additional config flags from user_config.pri
 exists(user_config.pri):infile(user_config.pri, CONFIG) {
     CONFIG += $$fromfile(user_config.pri, CONFIG)
@@ -181,50 +224,15 @@ ReleaseBuild {
     # We don't need the testlib console in release mode
     QT.testlib.CONFIG -= console
 }
+
 #
-# OS Specific settings
+# Branding
 #
 
-MacBuild {
-    QMAKE_INFO_PLIST    = Custom-Info.plist
-    ICON                = $${BASEDIR}/resources/icons/macx.icns
-    OTHER_FILES        += Custom-Info.plist
-equals(QT_MAJOR_VERSION, 5) | greaterThan(QT_MINOR_VERSION, 5) {
-    LIBS               += -framework ApplicationServices
-}
-}
-
-iOSBuild {
-    BUNDLE.files        = $$files($$PWD/ios/AppIcon*.png) $$PWD/ios/QGCLaunchScreen.xib
-    QMAKE_BUNDLE_DATA  += BUNDLE
-    LIBS               += -framework AVFoundation
-    #-- Info.plist (need an "official" one for the App Store)
-    ForAppStore {
-        message(App Store Build)
-        #-- Create official, versioned Info.plist
-        APP_STORE = $$system(cd $${BASEDIR} && $${BASEDIR}/tools/update_ios_version.sh $${BASEDIR}/ios/iOSForAppStore-Info-Source.plist $${BASEDIR}/ios/iOSForAppStore-Info.plist)
-        APP_ERROR = $$find(APP_STORE, "Error")
-        count(APP_ERROR, 1) {
-            error("Error building .plist file. 'ForAppStore' builds are only possible through the official build system.")
-        }
-        QMAKE_INFO_PLIST  = $${BASEDIR}/ios/iOSForAppStore-Info.plist
-        OTHER_FILES      += $${BASEDIR}/ios/iOSForAppStore-Info.plist
-    } else {
-        QMAKE_INFO_PLIST  = $${BASEDIR}/ios/iOS-Info.plist
-        OTHER_FILES      += $${BASEDIR}/ios/iOS-Info.plist
-    }
-    #-- TODO: Add iTunesArtwork
-}
-
-LinuxBuild {
-    CONFIG += qesp_linux_udev
-}
-
-RC_ICONS = resources/icons/qgroundcontrol.ico
-QMAKE_TARGET_COMPANY = "qgroundcontrol.org"
+QMAKE_TARGET_COMPANY     = "qgroundcontrol.org"
 QMAKE_TARGET_DESCRIPTION = "Open source ground control app provided by QGroundControl dev team"
-QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2016 QGroundControl Development Team. All rights reserved."
-QMAKE_TARGET_PRODUCT = "QGroundControl"
+QMAKE_TARGET_COPYRIGHT   = "Copyright (C) 2016 QGroundControl Development Team. All rights reserved."
+QMAKE_TARGET_PRODUCT     = "QGroundControl"
 
 #
 # Build-specific settings
@@ -255,12 +263,34 @@ include(src/QtLocationPlugin/QGCLocationPlugin.pri)
 include(QGCExternalLibs.pri)
 
 #
-# Main QGroundControl portion of project file
+# Resources (custom code can replace them)
 #
 
-RESOURCES += \
-    qgroundcontrol.qrc \
-    qgcresources.qrc
+CustomBuild {
+    exists($$PWD/custom/qgroundcontrol.qrc) {
+        message("Using custom qgroundcontrol.qrc")
+        RESOURCES += $$PWD/custom/qgroundcontrol.qrc
+    } else {
+        RESOURCES += $$PWD/qgroundcontrol.qrc
+    }
+    exists($$PWD/custom/qgcresources.qrc) {
+        message("Using custom qgcresources.qrc")
+        RESOURCES += $$PWD/custom/qgcresources.qrc
+    } else {
+        RESOURCES += $$PWD/qgcresources.qrc
+    }
+} else {
+    DEFINES += QGC_APPLICATION_NAME=\"\\\"QGroundControl\\\"\"
+    DEFINES += QGC_ORG_NAME=\"\\\"QGroundControl.org\\\"\"
+    DEFINES += QGC_ORG_DOMAIN=\"\\\"org.qgroundcontrol\\\"\"
+    RESOURCES += \
+        $$PWD/qgroundcontrol.qrc \
+        $$PWD/qgcresources.qrc
+}
+
+#
+# Main QGroundControl portion of project file
+#
 
 DebugBuild {
     # Unit Test resources
@@ -285,7 +315,7 @@ INCLUDEPATH += \
     src/FollowMe \
     src/GPS \
     src/Joystick \
-    src/MissionEditor \
+    src/PlanView \
     src/MissionManager \
     src/PositionManager \
     src/QmlControls \
@@ -323,13 +353,9 @@ FORMS += \
     src/ui/QGCMAVLinkInspector.ui \
     src/ui/QGCMAVLinkLogPlayer.ui \
     src/ui/QGCMapRCToParamDialog.ui \
-    src/ui/QGCTabbedInfoView.ui \
     src/ui/QGCUASFileView.ui \
     src/ui/QGCUASFileViewMulti.ui \
     src/ui/uas/QGCUnconnectedInfoWidget.ui \
-    src/ui/uas/UASMessageView.ui \
-    src/ui/uas/UASQuickView.ui \
-    src/ui/uas/UASQuickViewItemSelect.ui \
 }
 
 #
@@ -362,13 +388,20 @@ DebugBuild { PX4FirmwarePlugin { PX4FirmwarePluginFactory  { APMFirmwarePlugin {
         src/FactSystem/FactSystemTestGeneric.h \
         src/FactSystem/FactSystemTestPX4.h \
         src/FactSystem/ParameterManagerTest.h \
-        src/MissionManager/ComplexMissionItemTest.h \
+        src/MissionManager/CameraSectionTest.h \
         src/MissionManager/MissionCommandTreeTest.h \
         src/MissionManager/MissionControllerManagerTest.h \
         src/MissionManager/MissionControllerTest.h \
         src/MissionManager/MissionItemTest.h \
         src/MissionManager/MissionManagerTest.h \
+        src/MissionManager/MissionSettingsTest.h \
+        src/MissionManager/PlanMasterControllerTest.h \
+        src/MissionManager/QGCMapPolygonTest.h \
+        src/MissionManager/SectionTest.h \
         src/MissionManager/SimpleMissionItemTest.h \
+        src/MissionManager/SpeedSectionTest.h \
+        src/MissionManager/SurveyMissionItemTest.h \
+        src/MissionManager/VisualMissionItemTest.h \
         src/qgcunittest/FileDialogTest.h \
         src/qgcunittest/FileManagerTest.h \
         src/qgcunittest/FlightGearTest.h \
@@ -390,13 +423,20 @@ DebugBuild { PX4FirmwarePlugin { PX4FirmwarePluginFactory  { APMFirmwarePlugin {
         src/FactSystem/FactSystemTestGeneric.cc \
         src/FactSystem/FactSystemTestPX4.cc \
         src/FactSystem/ParameterManagerTest.cc \
-        src/MissionManager/ComplexMissionItemTest.cc \
+        src/MissionManager/CameraSectionTest.cc \
         src/MissionManager/MissionCommandTreeTest.cc \
         src/MissionManager/MissionControllerManagerTest.cc \
         src/MissionManager/MissionControllerTest.cc \
         src/MissionManager/MissionItemTest.cc \
         src/MissionManager/MissionManagerTest.cc \
+        src/MissionManager/MissionSettingsTest.cc \
+        src/MissionManager/PlanMasterControllerTest.cc \
+        src/MissionManager/QGCMapPolygonTest.cc \
+        src/MissionManager/SectionTest.cc \
         src/MissionManager/SimpleMissionItemTest.cc \
+        src/MissionManager/SpeedSectionTest.cc \
+        src/MissionManager/SurveyMissionItemTest.cc \
+        src/MissionManager/VisualMissionItemTest.cc \
         src/qgcunittest/FileDialogTest.cc \
         src/qgcunittest/FileManagerTest.cc \
         src/qgcunittest/FlightGearTest.cc \
@@ -418,10 +458,11 @@ DebugBuild { PX4FirmwarePlugin { PX4FirmwarePluginFactory  { APMFirmwarePlugin {
 
 HEADERS += \
     src/AnalyzeView/ExifParser.h \
+    src/AnalyzeView/ULogParser.h \
+    src/AnalyzeView/PX4LogParser.h \
     src/CmdLineOptParser.h \
     src/FirmwarePlugin/PX4/px4_custom_mode.h \
     src/FlightDisplay/VideoManager.h \
-    src/FlightMap/FlightMapSettings.h \
     src/FlightMap/Widgets/ValuesWidgetController.h \
     src/FollowMe/FollowMe.h \
     src/GAudioOutput.h \
@@ -430,6 +471,7 @@ HEADERS += \
     src/JsonHelper.h \
     src/LogCompressor.h \
     src/MG.h \
+    src/MissionManager/CameraSection.h \
     src/MissionManager/ComplexMissionItem.h \
     src/MissionManager/FixedWingLandingComplexItem.h \
     src/MissionManager/GeoFenceController.h \
@@ -440,12 +482,16 @@ HEADERS += \
     src/MissionManager/MissionController.h \
     src/MissionManager/MissionItem.h \
     src/MissionManager/MissionManager.h \
+    src/MissionManager/MissionSettingsItem.h \
     src/MissionManager/PlanElementController.h \
+    src/MissionManager/PlanMasterController.h \
     src/MissionManager/QGCMapPolygon.h \
     src/MissionManager/RallyPoint.h \
     src/MissionManager/RallyPointController.h \
     src/MissionManager/RallyPointManager.h \
     src/MissionManager/SimpleMissionItem.h \
+    src/MissionManager/Section.h \
+    src/MissionManager/SpeedSection.h \
     src/MissionManager/SurveyMissionItem.h \
     src/MissionManager/VisualMissionItem.h \
     src/PositionManager/PositionManager.h \
@@ -459,8 +505,8 @@ HEADERS += \
     src/QGCGeo.h \
     src/QGCLoggingCategory.h \
     src/QGCMapPalette.h \
-    src/QGCMobileFileDialogController.h \
     src/QGCPalette.h \
+    src/QGCQGeoCoordinate.h \
     src/QGCQmlWidgetHolder.h \
     src/QGCQuickWidget.h \
     src/QGCTemporaryFile.h \
@@ -469,6 +515,7 @@ HEADERS += \
     src/QmlControls/CoordinateVector.h \
     src/QmlControls/MavlinkQmlSingleton.h \
     src/QmlControls/ParameterEditorController.h \
+    src/QmlControls/QFileDialogController.h \
     src/QmlControls/QGCImageProvider.h \
     src/QmlControls/QGroundControlQmlGlobal.h \
     src/QmlControls/QmlObjectListModel.h \
@@ -477,6 +524,9 @@ HEADERS += \
     src/QtLocationPlugin/QMLControl/QGCMapEngineManager.h \
     src/Settings/AppSettings.h \
     src/Settings/AutoConnectSettings.h \
+    src/Settings/FlightMapSettings.h \
+    src/Settings/GuidedSettings.h \
+    src/Settings/RTKSettings.h \
     src/Settings/SettingsGroup.h \
     src/Settings/SettingsManager.h \
     src/Settings/UnitsSettings.h \
@@ -495,6 +545,12 @@ HEADERS += \
     src/uas/UAS.h \
     src/uas/UASInterface.h \
     src/uas/UASMessageHandler.h \
+    src/AnalyzeView/LogDownloadController.h \
+
+AndroidBuild {
+HEADERS += \
+	src/Joystick/JoystickAndroid.h \
+}
 
 DebugBuild {
 HEADERS += \
@@ -524,7 +580,7 @@ HEADERS += \
 !MobileBuild {
 HEADERS += \
     src/AnalyzeView/GeoTagController.h \
-    src/AnalyzeView/LogDownloadController.h \
+    src/AnalyzeView/MavlinkConsoleController.h \
     src/GPS/Drivers/src/gps_helper.h \
     src/GPS/Drivers/src/ubx.h \
     src/GPS/GPSManager.h \
@@ -535,7 +591,7 @@ HEADERS += \
     src/GPS/satellite_info.h \
     src/GPS/vehicle_gps_position.h \
     src/Joystick/JoystickSDL.h \
-    src/QGCFileDialog.h \
+    src/QGCQFileDialog.h \
     src/QGCMessageBox.h \
     src/RunGuard.h \
     src/ViewWidgets/CustomCommandWidget.h \
@@ -558,7 +614,6 @@ HEADERS += \
     src/ui/QGCMAVLinkInspector.h \
     src/ui/QGCMAVLinkLogPlayer.h \
     src/ui/QGCMapRCToParamDialog.h \
-    src/ui/QGCTabbedInfoView.h \
     src/ui/QGCUASFileView.h \
     src/ui/QGCUASFileViewMulti.h \
     src/ui/linechart/ChartPlot.h \
@@ -569,12 +624,6 @@ HEADERS += \
     src/ui/linechart/ScrollZoomer.h \
     src/ui/linechart/Scrollbar.h \
     src/ui/uas/QGCUnconnectedInfoWidget.h \
-    src/ui/uas/UASMessageView.h \
-    src/ui/uas/UASQuickView.h \
-    src/ui/uas/UASQuickViewGaugeItem.h \
-    src/ui/uas/UASQuickViewItem.h \
-    src/ui/uas/UASQuickViewItemSelect.h \
-    src/ui/uas/UASQuickViewTextItem.h \
 }
 
 iOSBuild {
@@ -585,13 +634,15 @@ iOSBuild {
 
 AndroidBuild {
     SOURCES += src/MobileScreenMgr.cc \
+	src/Joystick/JoystickAndroid.cc \
 }
 
 SOURCES += \
     src/AnalyzeView/ExifParser.cc \
+    src/AnalyzeView/ULogParser.cc \
+    src/AnalyzeView/PX4LogParser.cc \
     src/CmdLineOptParser.cc \
     src/FlightDisplay/VideoManager.cc \
-    src/FlightMap/FlightMapSettings.cc \
     src/FlightMap/Widgets/ValuesWidgetController.cc \
     src/FollowMe/FollowMe.cc \
     src/GAudioOutput.cc \
@@ -599,6 +650,7 @@ SOURCES += \
     src/Joystick/JoystickManager.cc \
     src/JsonHelper.cc \
     src/LogCompressor.cc \
+    src/MissionManager/CameraSection.cc \
     src/MissionManager/ComplexMissionItem.cc \
     src/MissionManager/FixedWingLandingComplexItem.cc \
     src/MissionManager/GeoFenceController.cc \
@@ -609,12 +661,15 @@ SOURCES += \
     src/MissionManager/MissionController.cc \
     src/MissionManager/MissionItem.cc \
     src/MissionManager/MissionManager.cc \
+    src/MissionManager/MissionSettingsItem.cc \
     src/MissionManager/PlanElementController.cc \
+    src/MissionManager/PlanMasterController.cc \
     src/MissionManager/QGCMapPolygon.cc \
     src/MissionManager/RallyPoint.cc \
     src/MissionManager/RallyPointController.cc \
     src/MissionManager/RallyPointManager.cc \
     src/MissionManager/SimpleMissionItem.cc \
+    src/MissionManager/SpeedSection.cc \
     src/MissionManager/SurveyMissionItem.cc \
     src/MissionManager/VisualMissionItem.cc \
     src/PositionManager/PositionManager.cpp \
@@ -627,8 +682,8 @@ SOURCES += \
     src/QGCGeo.cc \
     src/QGCLoggingCategory.cc \
     src/QGCMapPalette.cc \
-    src/QGCMobileFileDialogController.cc \
     src/QGCPalette.cc \
+    src/QGCQGeoCoordinate.cc \
     src/QGCQmlWidgetHolder.cpp \
     src/QGCQuickWidget.cc \
     src/QGCTemporaryFile.cc \
@@ -636,6 +691,7 @@ SOURCES += \
     src/QmlControls/AppMessages.cc \
     src/QmlControls/CoordinateVector.cc \
     src/QmlControls/ParameterEditorController.cc \
+    src/QmlControls/QFileDialogController.cc \
     src/QmlControls/QGCImageProvider.cc \
     src/QmlControls/QGroundControlQmlGlobal.cc \
     src/QmlControls/QmlObjectListModel.cc \
@@ -644,6 +700,9 @@ SOURCES += \
     src/QtLocationPlugin/QMLControl/QGCMapEngineManager.cc \
     src/Settings/AppSettings.cc \
     src/Settings/AutoConnectSettings.cc \
+    src/Settings/FlightMapSettings.cc \
+    src/Settings/GuidedSettings.cc \
+    src/Settings/RTKSettings.cc \
     src/Settings/SettingsGroup.cc \
     src/Settings/SettingsManager.cc \
     src/Settings/UnitsSettings.cc \
@@ -661,6 +720,7 @@ SOURCES += \
     src/main.cc \
     src/uas/UAS.cc \
     src/uas/UASMessageHandler.cc \
+    src/AnalyzeView/LogDownloadController.cc \
 
 DebugBuild {
 SOURCES += \
@@ -683,14 +743,14 @@ contains(DEFINES, QGC_ENABLE_BLUETOOTH) {
 !MobileBuild {
 SOURCES += \
     src/AnalyzeView/GeoTagController.cc \
-    src/AnalyzeView/LogDownloadController.cc \
+    src/AnalyzeView/MavlinkConsoleController.cc \
     src/GPS/Drivers/src/gps_helper.cpp \
     src/GPS/Drivers/src/ubx.cpp \
     src/GPS/GPSManager.cc \
     src/GPS/GPSProvider.cc \
     src/GPS/RTCM/RTCMMavlink.cc \
     src/Joystick/JoystickSDL.cc \
-    src/QGCFileDialog.cc \
+    src/QGCQFileDialog.cc \
     src/RunGuard.cc \
     src/ViewWidgets/CustomCommandWidget.cc \
     src/ViewWidgets/CustomCommandWidgetController.cc \
@@ -711,7 +771,6 @@ SOURCES += \
     src/ui/QGCMAVLinkInspector.cc \
     src/ui/QGCMAVLinkLogPlayer.cc \
     src/ui/QGCMapRCToParamDialog.cpp \
-    src/ui/QGCTabbedInfoView.cpp \
     src/ui/QGCUASFileView.cc \
     src/ui/QGCUASFileViewMulti.cc \
     src/ui/linechart/ChartPlot.cc \
@@ -722,12 +781,6 @@ SOURCES += \
     src/ui/linechart/ScrollZoomer.cc \
     src/ui/linechart/Scrollbar.cc \
     src/ui/uas/QGCUnconnectedInfoWidget.cc \
-    src/ui/uas/UASMessageView.cc \
-    src/ui/uas/UASQuickView.cc \
-    src/ui/uas/UASQuickViewGaugeItem.cc \
-    src/ui/uas/UASQuickViewItem.cc \
-    src/ui/uas/UASQuickViewItemSelect.cc \
-    src/ui/uas/UASQuickViewTextItem.cc \
 }
 
 # Palette test widget in debug builds
@@ -752,7 +805,10 @@ HEADERS+= \
     src/AutoPilotPlugins/Common/ESP8266ComponentController.h \
     src/AutoPilotPlugins/Common/MotorComponent.h \
     src/AutoPilotPlugins/Common/RadioComponentController.h \
+    src/AutoPilotPlugins/Common/SyslinkComponent.h \
+    src/AutoPilotPlugins/Common/SyslinkComponentController.h \
     src/AutoPilotPlugins/Generic/GenericAutoPilotPlugin.h \
+    src/FirmwarePlugin/CameraMetaData.h \
     src/FirmwarePlugin/FirmwarePlugin.h \
     src/FirmwarePlugin/FirmwarePluginManager.h \
     src/Vehicle/MultiVehicleManager.h \
@@ -773,7 +829,10 @@ SOURCES += \
     src/AutoPilotPlugins/Common/ESP8266ComponentController.cc \
     src/AutoPilotPlugins/Common/MotorComponent.cc \
     src/AutoPilotPlugins/Common/RadioComponentController.cc \
+    src/AutoPilotPlugins/Common/SyslinkComponent.cc \
+    src/AutoPilotPlugins/Common/SyslinkComponentController.cc \
     src/AutoPilotPlugins/Generic/GenericAutoPilotPlugin.cc \
+    src/FirmwarePlugin/CameraMetaData.cc \
     src/FirmwarePlugin/FirmwarePlugin.cc \
     src/FirmwarePlugin/FirmwarePluginManager.cc \
     src/Vehicle/MultiVehicleManager.cc \
@@ -984,7 +1043,11 @@ AndroidBuild {
 # Post link configuration
 #
 
-include(QGCSetup.pri)
+contains (CONFIG, QGC_DISABLE_BUILD_SETUP) {
+    message("Disable standard build setup")
+} else {
+    include(QGCSetup.pri)
+}
 
 #
 # Installer targets

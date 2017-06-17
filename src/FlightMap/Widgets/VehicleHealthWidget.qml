@@ -7,7 +7,7 @@
  *
  ****************************************************************************/
 
-import QtQuick          2.4
+import QtQuick          2.3
 import QtQuick.Layouts  1.2
 
 import QGroundControl               1.0
@@ -30,8 +30,13 @@ QGCFlickable {
     // Any time the unhealthy sensors list changes, switch to the health page
     onUnhealthySensorsChanged: {
         if (unhealthySensors.length != 0) {
-            showPage(1)
+            showPage(2)
         }
+    }
+
+    MouseArea {
+        anchors.fill:   parent
+        onClicked:      showNextPage()
     }
 
     Column {

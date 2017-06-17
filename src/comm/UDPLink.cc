@@ -23,10 +23,13 @@
 #include <QNetworkProxy>
 #include <QNetworkInterface>
 #include <iostream>
+#include <QHostInfo>
 
 #include "UDPLink.h"
 #include "QGC.h"
-#include <QHostInfo>
+#include "QGCApplication.h"
+#include "SettingsManager.h"
+#include "AutoConnectSettings.h"
 
 #define REMOVE_GONE_HOSTS 0
 
@@ -67,15 +70,17 @@ static QString get_ip_address(const QString& address)
 
 UDPLink::UDPLink(SharedLinkConfigurationPointer& config)
     : LinkInterface(config)
-#if defined(QGC_ZEROCONF_ENABLED)
+    #if defined(QGC_ZEROCONF_ENABLED)
     , _dnssServiceRef(NULL)
-#endif
+    #endif
     , _running(false)
     , _socket(NULL)
     , _udpConfig(qobject_cast<UDPConfiguration*>(config.data()))
     , _connectState(false)
 {
-    Q_ASSERT(_udpConfig);
+    if (!_udpConfig) {
+        qWarning() << "Internal error";
+    }
     moveToThread(this);
 }
 
@@ -292,14 +297,14 @@ void UDPLink::_registerZeroconf(uint16_t port, const std::string &regType)
 {
 #if defined(QGC_ZEROCONF_ENABLED)
     DNSServiceErrorType result = DNSServiceRegister(&_dnssServiceRef, 0, 0, 0,
-        regType.c_str(),
-        NULL,
-        NULL,
-        htons(port),
-        0,
-        NULL,
-        NULL,
-        NULL);
+                                                    regType.c_str(),
+                                                    NULL,
+                                                    NULL,
+                                                    htons(port),
+                                                    0,
+                                                    NULL,
+                                                    NULL,
+                                                    NULL);
     if (result != kDNSServiceErr_NoError)
     {
         emit communicationError("UDP Link Error", "Error registering Zeroconf");
@@ -315,10 +320,10 @@ void UDPLink::_deregisterZeroconf()
 {
 #if defined(QGC_ZEROCONF_ENABLED)
     if (_dnssServiceRef)
-     {
-         DNSServiceRefDeallocate(_dnssServiceRef);
-         _dnssServiceRef = NULL;
-     }
+    {
+        DNSServiceRefDeallocate(_dnssServiceRef);
+        _dnssServiceRef = NULL;
+    }
 #endif
 }
 
@@ -327,7 +332,12 @@ void UDPLink::_deregisterZeroconf()
 
 UDPConfiguration::UDPConfiguration(const QString& name) : LinkConfiguration(name)
 {
-    _localPort = QGC_UDP_LOCAL_PORT;
+    AutoConnectSettings* settings = qgcApp()->toolbox()->settingsManager()->autoConnectSettings();
+    _localPort = settings->udpListenPort()->rawValue().toInt();
+    QString targetHostIP = settings->udpTargetHostIP()->rawValue().toString();
+    if (!targetHostIP.isEmpty()) {
+        addHost(targetHostIP, settings->udpTargetHostPort()->rawValue().toInt());
+    }
 }
 
 UDPConfiguration::UDPConfiguration(UDPConfiguration* source) : LinkConfiguration(source)
@@ -347,15 +357,18 @@ void UDPConfiguration::copyFrom(LinkConfiguration *source)
 {
     LinkConfiguration::copyFrom(source);
     UDPConfiguration* usource = dynamic_cast<UDPConfiguration*>(source);
-    Q_ASSERT(usource != NULL);
-    _localPort = usource->localPort();
-    _hosts.clear();
-    QString host;
-    int port;
-    if(usource->firstHost(host, port)) {
-        do {
-            addHost(host, port);
-        } while(usource->nextHost(host, port));
+    if (usource) {
+        _localPort = usource->localPort();
+        _hosts.clear();
+        QString host;
+        int port;
+        if(usource->firstHost(host, port)) {
+            do {
+                addHost(host, port);
+            } while(usource->nextHost(host, port));
+        }
+    } else {
+        qWarning() << "Internal error";
     }
 }
 
@@ -494,11 +507,13 @@ void UDPConfiguration::saveSettings(QSettings& settings, const QString& root)
 
 void UDPConfiguration::loadSettings(QSettings& settings, const QString& root)
 {
+    AutoConnectSettings* acSettings = qgcApp()->toolbox()->settingsManager()->autoConnectSettings();
+
     _confMutex.lock();
     _hosts.clear();
     _confMutex.unlock();
     settings.beginGroup(root);
-    _localPort = (quint16)settings.value("port", QGC_UDP_LOCAL_PORT).toUInt();
+    _localPort = (quint16)settings.value("port", acSettings->udpListenPort()->rawValue().toInt()).toUInt();
     int hostCount = settings.value("hostCount", 0).toInt();
     for(int i = 0; i < hostCount; i++) {
         QString hkey = QString("host%1").arg(i);

@@ -4,16 +4,19 @@
     "shortDescription": "Distance between landing and loiter points.",
     "type":             "double",
     "units":            "m",
+    "min":              10,
     "decimalPlaces":    1,
-    "defaultValue":     100.0
+    "defaultValue":     300.0
 },
 {
     "name":             "Landing heading",
-    "shortDescription": "Heading from land point to loiter point.",
+    "shortDescription": "Heading from loiter point to land point.",
     "type":             "double",
     "units":            "deg",
+    "min":              0.0,
+    "max":              360.0,
     "decimalPlaces":    0,
-    "defaultValue":     0.0
+    "defaultValue":     270.0
 },
 {
     "name":             "Loiter altitude",
@@ -28,7 +31,7 @@
     "shortDescription": "Loiter radius.",
     "type":             "double",
     "decimalPlaces":    1,
-    "min":              0.1,
+    "min":              1,
     "units":            "m",
     "defaultValue":     75.0
 },

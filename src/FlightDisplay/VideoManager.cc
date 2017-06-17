@@ -30,13 +30,14 @@
 QGC_LOGGING_CATEGORY(VideoManagerLog, "VideoManagerLog")
 
 //-----------------------------------------------------------------------------
-VideoManager::VideoManager(QGCApplication* app)
-    : QGCTool(app)
+VideoManager::VideoManager(QGCApplication* app, QGCToolbox* toolbox)
+    : QGCTool(app, toolbox)
     , _videoSurface(NULL)
     , _videoReceiver(NULL)
     , _videoRunning(false)
     , _init(false)
     , _videoSettings(NULL)
+    , _showFullScreen(false)
 {
 }
 
@@ -56,6 +57,10 @@ VideoManager::setToolbox(QGCToolbox *toolbox)
 
    _videoSettings = toolbox->settingsManager()->videoSettings();
    QString videoSource = _videoSettings->videoSource()->rawValue().toString();
+   connect(_videoSettings->videoSource(), &Fact::rawValueChanged, this, &VideoManager::_videoSourceChanged);
+   connect(_videoSettings->udpPort(), &Fact::rawValueChanged, this, &VideoManager::_udpPortChanged);
+   connect(_videoSettings->rtspUrl(), &Fact::rawValueChanged, this, &VideoManager::_rtspUrlChanged);
+
 
 #if defined(QGC_GST_STREAMING)
 #ifndef QGC_DISABLE_UVC
@@ -89,6 +94,31 @@ VideoManager::setToolbox(QGCToolbox *toolbox)
    connect(&_frameTimer, &QTimer::timeout, this, &VideoManager::_updateTimer);
    _frameTimer.start(1000);
 #endif
+}
+
+void VideoManager::_videoSourceChanged(void)
+{
+    emit hasVideoChanged();
+    emit isGStreamerChanged();
+    _restartVideo();
+}
+
+void VideoManager::_udpPortChanged(void)
+{
+    _restartVideo();
+}
+
+void VideoManager::_rtspUrlChanged(void)
+{
+    _restartVideo();
+}
+
+//-----------------------------------------------------------------------------
+void
+VideoManager::grabImage(QString imageFile)
+{
+    _imageFile = imageFile;
+    emit imageFileChanged();
 }
 
 //-----------------------------------------------------------------------------
@@ -164,6 +194,18 @@ void VideoManager::_updateTimer()
 }
 
 //-----------------------------------------------------------------------------
+void VideoManager::_updateSettings()
+{
+    if(!_videoSettings || !_videoReceiver)
+        return;
+
+    if (_videoSettings->videoSource()->rawValue().toString() == VideoSettings::videoSourceUDP)
+        _videoReceiver->setUri(QStringLiteral("udp://0.0.0.0:%1").arg(_videoSettings->udpPort()->rawValue().toInt()));
+    else
+        _videoReceiver->setUri(_videoSettings->rtspUrl()->rawValue().toString());
+}
+
+//-----------------------------------------------------------------------------
 void VideoManager::_updateVideo()
 {
     if(_init) {
@@ -175,12 +217,20 @@ void VideoManager::_updateVideo()
         _videoReceiver = new VideoReceiver(this);
 #if defined(QGC_GST_STREAMING)
         _videoReceiver->setVideoSink(_videoSurface->videoSink());
-        QString videoSource = _videoSettings->videoSource()->rawValue().toString();
-        if (_videoSettings->videoSource()->rawValue().toString() == VideoSettings::videoSourceUDP)
-            _videoReceiver->setUri(QStringLiteral("udp://0.0.0.0:%1").arg(_videoSettings->udpPort()->rawValue().toInt()));
-        else
-            _videoReceiver->setUri(_videoSettings->rtspUrl()->rawValue().toString());
+        _updateSettings();
 #endif
         _videoReceiver->start();
     }
+}
+
+//-----------------------------------------------------------------------------
+void VideoManager::_restartVideo()
+{
+    if(!_videoReceiver)
+        return;
+#if defined(QGC_GST_STREAMING)
+    _videoReceiver->stop();
+    _updateSettings();
+    _videoReceiver->start();
+#endif
 }

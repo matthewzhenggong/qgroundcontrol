@@ -19,12 +19,14 @@
 
 static const char* kQmlGlobalKeyName = "QGCQml";
 
-const char* QGroundControlQmlGlobal::_virtualTabletJoystickKey  = "VirtualTabletJoystick";
-const char* QGroundControlQmlGlobal::_baseFontPointSizeKey      = "BaseDeviceFontPointSize";
+const char* QGroundControlQmlGlobal::_flightMapPositionSettingsGroup =          "FlightMapPosition";
+const char* QGroundControlQmlGlobal::_flightMapPositionLatitudeSettingsKey =    "Latitude";
+const char* QGroundControlQmlGlobal::_flightMapPositionLongitudeSettingsKey =   "Longitude";
+const char* QGroundControlQmlGlobal::_flightMapZoomSettingsKey =                "FlightMapZoom";
 
-QGroundControlQmlGlobal::QGroundControlQmlGlobal(QGCApplication* app)
-    : QGCTool(app)
-    , _flightMapSettings(NULL)
+QGroundControlQmlGlobal::QGroundControlQmlGlobal(QGCApplication* app, QGCToolbox* toolbox)
+    : QGCTool(app, toolbox)
+    , _flightMapInitialZoom(17.0)
     , _linkManager(NULL)
     , _multiVehicleManager(NULL)
     , _mapEngineManager(NULL)
@@ -35,13 +37,8 @@ QGroundControlQmlGlobal::QGroundControlQmlGlobal(QGCApplication* app)
     , _corePlugin(NULL)
     , _firmwarePluginManager(NULL)
     , _settingsManager(NULL)
-    , _virtualTabletJoystick(false)
-    , _baseFontPointSize(0.0)
+    , _skipSetupPage(false)
 {
-    QSettings settings;
-    _virtualTabletJoystick  = settings.value(_virtualTabletJoystickKey, false).toBool();
-    _baseFontPointSize      = settings.value(_baseFontPointSizeKey, 0.0).toDouble();
-
     // We clear the parent on this object since we run into shutdown problems caused by hybrid qml app. Instead we let it leak on shutdown.
     setParent(NULL);
 }
@@ -55,7 +52,6 @@ void QGroundControlQmlGlobal::setToolbox(QGCToolbox* toolbox)
 {
     QGCTool::setToolbox(toolbox);
 
-    _flightMapSettings      = toolbox->flightMapSettings();
     _linkManager            = toolbox->linkManager();
     _multiVehicleManager    = toolbox->multiVehicleManager();
     _mapEngineManager       = toolbox->mapEngineManager();
@@ -141,7 +137,7 @@ void QGroundControlQmlGlobal::startAPMArduSubMockLink(bool sendStatusText)
 #endif
 }
 
-void QGroundControlQmlGlobal::stopAllMockLinks(void)
+void QGroundControlQmlGlobal::stopOneMockLink(void)
 {
 #ifdef QT_DEBUG
     LinkManager* linkManager = qgcApp()->toolbox()->linkManager();
@@ -152,15 +148,10 @@ void QGroundControlQmlGlobal::stopAllMockLinks(void)
 
         if (mockLink) {
             linkManager->disconnectLink(mockLink);
+            return;
         }
     }
 #endif
-}
-
-void QGroundControlQmlGlobal::setIsDarkStyle(bool dark)
-{
-    qgcApp()->setStyle(dark);
-    emit isDarkStyleChanged(dark);
 }
 
 void QGroundControlQmlGlobal::setIsVersionCheckEnabled(bool enable)
@@ -175,26 +166,6 @@ void QGroundControlQmlGlobal::setMavlinkSystemID(int id)
     emit mavlinkSystemIDChanged(id);
 }
 
-void QGroundControlQmlGlobal::setVirtualTabletJoystick(bool enabled)
-{
-    if (_virtualTabletJoystick != enabled) {
-        QSettings settings;
-        settings.setValue(_virtualTabletJoystickKey, enabled);
-        _virtualTabletJoystick = enabled;
-        emit virtualTabletJoystickChanged(enabled);
-    }
-}
-
-void QGroundControlQmlGlobal::setBaseFontPointSize(qreal size)
-{
-    if (size >= 6.0 && size <= 48.0) {
-        QSettings settings;
-        settings.setValue(_baseFontPointSizeKey, size);
-        _baseFontPointSize = size;
-        emit baseFontPointSizeChanged(size);
-    }
-}
-
 int QGroundControlQmlGlobal::supportedFirmwareCount()
 {
     return _firmwarePluginManager->supportedFirmwareTypes().count();
@@ -207,4 +178,55 @@ bool QGroundControlQmlGlobal::linesIntersect(QPointF line1A, QPointF line1B, QPo
 
     return QLineF(line1A, line1B).intersect(QLineF(line2A, line2B), &intersectPoint) == QLineF::BoundedIntersection &&
             intersectPoint != line1A && intersectPoint != line1B;
+}
+
+void QGroundControlQmlGlobal::setSkipSetupPage(bool skip)
+{
+    if(_skipSetupPage != skip) {
+        _skipSetupPage = skip;
+        emit skipSetupPageChanged();
+    }
+}
+
+QGeoCoordinate QGroundControlQmlGlobal::flightMapPosition(void)
+{
+    QSettings       settings;
+    QGeoCoordinate  coord;
+
+    settings.beginGroup(_flightMapPositionSettingsGroup);
+    coord.setLatitude(settings.value(_flightMapPositionLatitudeSettingsKey, 0).toDouble());
+    coord.setLongitude(settings.value(_flightMapPositionLongitudeSettingsKey, 0).toDouble());
+
+    return coord;
+}
+
+double QGroundControlQmlGlobal::flightMapZoom(void)
+{
+    QSettings settings;
+
+    settings.beginGroup(_flightMapPositionSettingsGroup);
+    return settings.value(_flightMapZoomSettingsKey, 2).toDouble();
+}
+
+void QGroundControlQmlGlobal::setFlightMapPosition(QGeoCoordinate& coordinate)
+{
+    if (coordinate != flightMapPosition()) {
+        QSettings settings;
+
+        settings.beginGroup(_flightMapPositionSettingsGroup);
+        settings.setValue(_flightMapPositionLatitudeSettingsKey, coordinate.latitude());
+        settings.setValue(_flightMapPositionLongitudeSettingsKey, coordinate.longitude());
+        emit flightMapPositionChanged(coordinate);
+    }
+}
+
+void QGroundControlQmlGlobal::setFlightMapZoom(double zoom)
+{
+    if (zoom != flightMapZoom()) {
+        QSettings settings;
+
+        settings.beginGroup(_flightMapPositionSettingsGroup);
+        settings.setValue(_flightMapZoomSettingsKey, zoom);
+        emit flightMapZoomChanged(zoom);
+    }
 }

@@ -19,21 +19,29 @@
 
 const char* VideoSettings::videoSettingsGroupName = "Video";
 
-const char* VideoSettings::videoSourceName =    "VideoSource";
-const char* VideoSettings::udpPortName =        "VideoUDPPort";
-const char* VideoSettings::rtspUrlName =        "VideoRTSPUrl";
-const char* VideoSettings::videoSavePathName =  "VideoSavePath";
+const char* VideoSettings::videoSourceName =        "VideoSource";
+const char* VideoSettings::udpPortName =            "VideoUDPPort";
+const char* VideoSettings::rtspUrlName =            "VideoRTSPUrl";
+const char* VideoSettings::videoAspectRatioName =   "VideoAspectRatio";
+const char* VideoSettings::videoGridLinesName =     "VideoGridLines";
+const char* VideoSettings::showRecControlName =     "ShowRecControl";
+const char* VideoSettings::recordingFormatName =    "RecordingFormat";
+const char* VideoSettings::maxVideoSizeName =       "MaxVideoSize";
 
-const char* VideoSettings::videoSourceNoVideo = "No Video Available";
-const char* VideoSettings::videoSourceUDP =     "UDP Video Stream";
-const char* VideoSettings::videoSourceRTSP =    "RTSP Video Stream";
+const char* VideoSettings::videoSourceNoVideo =     "No Video Available";
+const char* VideoSettings::videoSourceUDP =         "UDP Video Stream";
+const char* VideoSettings::videoSourceRTSP =        "RTSP Video Stream";
 
 VideoSettings::VideoSettings(QObject* parent)
     : SettingsGroup(videoSettingsGroupName, QString() /* root settings group */, parent)
     , _videoSourceFact(NULL)
     , _udpPortFact(NULL)
     , _rtspUrlFact(NULL)
-    , _videoSavePathFact(NULL)
+    , _videoAspectRatioFact(NULL)
+    , _gridLinesFact(NULL)
+    , _showRecControlFact(NULL)
+    , _recordingFormatFact(NULL)
+    , _maxVideoSizeFact(NULL)
 {
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
     qmlRegisterUncreatableType<VideoSettings>("QGroundControl.SettingsManager", 1, 0, "VideoSettings", "Reference only");
@@ -96,11 +104,47 @@ Fact* VideoSettings::rtspUrl(void)
     return _rtspUrlFact;
 }
 
-Fact* VideoSettings::videoSavePath(void)
+Fact* VideoSettings::aspectRatio(void)
 {
-    if (!_videoSavePathFact) {
-        _videoSavePathFact = _createSettingsFact(videoSavePathName);
+    if (!_videoAspectRatioFact) {
+        _videoAspectRatioFact = _createSettingsFact(videoAspectRatioName);
     }
 
-    return _videoSavePathFact;
+    return _videoAspectRatioFact;
+}
+
+Fact* VideoSettings::gridLines(void)
+{
+    if (!_gridLinesFact) {
+        _gridLinesFact = _createSettingsFact(videoGridLinesName);
+    }
+
+    return _gridLinesFact;
+}
+
+Fact* VideoSettings::showRecControl(void)
+{
+    if (!_showRecControlFact) {
+        _showRecControlFact = _createSettingsFact(showRecControlName);
+    }
+
+    return _showRecControlFact;
+}
+
+Fact* VideoSettings::recordingFormat(void)
+{
+    if (!_recordingFormatFact) {
+        _recordingFormatFact = _createSettingsFact(recordingFormatName);
+    }
+
+    return _recordingFormatFact;
+}
+
+Fact* VideoSettings::maxVideoSize(void)
+{
+    if (!_maxVideoSizeFact) {
+        _maxVideoSizeFact = _createSettingsFact(maxVideoSizeName);
+    }
+
+    return _maxVideoSizeFact;
 }
