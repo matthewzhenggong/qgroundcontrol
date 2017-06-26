@@ -13,8 +13,8 @@ exists($${OUT_PWD}/qgroundcontrol.pro) {
 
 message(Qt version $$[QT_VERSION])
 
-!equals(QT_MAJOR_VERSION, 5) | !greaterThan(QT_MINOR_VERSION, 4) {
-    error("Unsupported Qt version, 5.5+ is required")
+!equals(QT_MAJOR_VERSION, 5) | !greaterThan(QT_MINOR_VERSION, 6) {
+    error("Unsupported Qt version, 5.7+ is required")
 }
 
 include(QGCCommon.pri)
@@ -288,6 +288,15 @@ CustomBuild {
         $$PWD/qgcresources.qrc
 }
 
+# On Qt 5.9 android versions there is the following bug: https://bugreports.qt.io/browse/QTBUG-61424
+# This prevents FileDialog from being used. So we have a temp hack workaround for it which just no-ops
+# the FileDialog fallback mechanism on android 5.9 builds.
+equals(QT_MAJOR_VERSION, 5):equals(QT_MINOR_VERSION, 9):AndroidBuild {
+    RESOURCES += $$PWD/HackAndroidFileDialog.qrc
+} else {
+    RESOURCES += $$PWD/HackFileDialog.qrc
+}
+
 #
 # Main QGroundControl portion of project file
 #
@@ -515,7 +524,7 @@ HEADERS += \
     src/QmlControls/CoordinateVector.h \
     src/QmlControls/MavlinkQmlSingleton.h \
     src/QmlControls/ParameterEditorController.h \
-    src/QmlControls/QFileDialogController.h \
+    src/QmlControls/QGCFileDialogController.h \
     src/QmlControls/QGCImageProvider.h \
     src/QmlControls/QGroundControlQmlGlobal.h \
     src/QmlControls/QmlObjectListModel.h \
@@ -691,7 +700,7 @@ SOURCES += \
     src/QmlControls/AppMessages.cc \
     src/QmlControls/CoordinateVector.cc \
     src/QmlControls/ParameterEditorController.cc \
-    src/QmlControls/QFileDialogController.cc \
+    src/QmlControls/QGCFileDialogController.cc \
     src/QmlControls/QGCImageProvider.cc \
     src/QmlControls/QGroundControlQmlGlobal.cc \
     src/QmlControls/QmlObjectListModel.cc \
@@ -812,6 +821,7 @@ HEADERS+= \
     src/FirmwarePlugin/FirmwarePlugin.h \
     src/FirmwarePlugin/FirmwarePluginManager.h \
     src/Vehicle/MultiVehicleManager.h \
+    src/Vehicle/GPSRTKFactGroup.h \
     src/Vehicle/Vehicle.h \
     src/VehicleSetup/VehicleComponent.h \
 
@@ -836,6 +846,7 @@ SOURCES += \
     src/FirmwarePlugin/FirmwarePlugin.cc \
     src/FirmwarePlugin/FirmwarePluginManager.cc \
     src/Vehicle/MultiVehicleManager.cc \
+    src/Vehicle/GPSRTKFactGroup.cc \
     src/Vehicle/Vehicle.cc \
     src/VehicleSetup/VehicleComponent.cc \
 
