@@ -1,0 +1,6 @@
+# Onboard parameters for vehicle 1
+#
+# MAV ID  COMPONENT ID  PARAM NAME  VALUE (FLOAT)
+1	1	Site_ASL	0	9
+1	1	Site_ps 0	9
+1	1	ExternalAHRS 0	6

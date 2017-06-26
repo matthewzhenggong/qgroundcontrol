@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/json">
+        <file alias="ZT/MavCmdInfoCommon.json">MavCmdInfoCommon.json</file>
+    </qresource>
+    <qresource prefix="/FirmwarePlugin/ZT">
+        <file alias="ZTParameterFactMetaData.xml">ZTParameterFactMetaData.xml</file>
+        <file alias="ZT.OfflineEditing.params">OfflineEditing.params</file>
+    </qresource>
+</RCC>

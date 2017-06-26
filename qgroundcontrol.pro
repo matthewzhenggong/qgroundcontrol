@@ -366,11 +366,18 @@ HEADERS += \
     src/api/QGCCorePlugin.h \
     src/api/QGCOptions.h \
     src/api/QGCSettings.h \
+    src/FirmwarePlugin/ZT/ZTFirmwarePlugin.h \
+    src/FirmwarePlugin/ZT/ZTFirmwarePluginFactory.h \
+    src/FirmwarePlugin/ZT/zt_custom_mode.h \
+    src/FirmwarePlugin/ZT/ZTParameterMetaData.h
 
 SOURCES += \
     src/api/QGCCorePlugin.cc \
     src/api/QGCOptions.cc \
     src/api/QGCSettings.cc \
+    src/FirmwarePlugin/ZT/ZTFirmwarePlugin.cc \
+    src/FirmwarePlugin/ZT/ZTFirmwarePluginFactory.cc \
+    src/FirmwarePlugin/ZT/ZTParameterMetaData.cc
 
 #
 # Unit Test specific configuration goes here (requires full debug build with all plugins)
@@ -1058,4 +1065,10 @@ include(QGCInstaller.pri)
 TRANSLATIONS = qgroundstation.ts
 
 DISTFILES += \
-    qgroundstation.ts
+    qgroundstation.ts \
+    src/FirmwarePlugin/ZT/MavCmdInfoCommon.json \
+    src/FirmwarePlugin/ZT/ZTParameterFactMetaData.xml \
+    src/FirmwarePlugin/ZT/OfflineEditing.params
+
+RESOURCES += \
+    src/FirmwarePlugin/ZT/ZTResources.qrc

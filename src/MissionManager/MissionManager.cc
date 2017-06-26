@@ -305,6 +305,7 @@ bool MissionManager::_checkForExpectedAck(AckType_t receivedAck)
     if (receivedAck == _expectedAck) {
         _expectedAck = AckNone;
         _ackTimeoutTimer->stop();
+
         return true;
     } else {
         if (_expectedAck == AckNone) {

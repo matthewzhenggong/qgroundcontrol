@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<parameters>
+  <version>3</version>
+  <parameter_version_major>1</parameter_version_major>
+  <parameter_version_minor>1</parameter_version_minor>
+  <group name="Hot Parameters" no_code_generation="true">
+    <parameter default="0" name="Site_ASL" type="FLOAT">
+      <short_desc>场高</short_desc>
+      <unit>M</unit>
+    </parameter>
+    <parameter default="101325" name="Site_ps" type="FLOAT">
+      <short_desc>场压</short_desc>
+      <unit>Pa</unit>
+      <min>0</min>
+      <max>102000</max>
+    </parameter>
+    <parameter default="1" name="ExternalAHRS" type="UINT8">
+      <short_desc>姿态解算选择</short_desc>
+      <min>0.00</min>
+      <max>1.00</max>
+    </parameter>
+  </group>
+</parameters>

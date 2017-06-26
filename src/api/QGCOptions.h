@@ -69,7 +69,7 @@ public:
     virtual bool    showSensorCalibrationAirspeed   () const { return true; }
     virtual bool    wifiReliableForCalibration      () const { return false; }
     virtual bool    sensorsHaveFixedOrientation     () const { return false; }
-    virtual bool    showFirmwareUpgrade             () const { return true; }
+    virtual bool    showFirmwareUpgrade             () const { return false; }
     virtual bool    guidedBarShowEmergencyStop      () const { return true; }
     virtual bool    guidedBarShowOrbit              () const { return true; }
     virtual bool    missionWaypointsOnly            () const { return false; }  ///< true: Only allow waypoints and complex items in Plan

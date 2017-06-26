@@ -562,7 +562,8 @@ public:
     int             rcRSSI                  () { return _rcRSSI; }
     bool            px4Firmware             () const { return _firmwareType == MAV_AUTOPILOT_PX4; }
     bool            apmFirmware             () const { return _firmwareType == MAV_AUTOPILOT_ARDUPILOTMEGA; }
-    bool            genericFirmware         () const { return !px4Firmware() && !apmFirmware(); }
+    bool            ztFirmware             () const { return _firmwareType == MAV_AUTOPILOT_ENUM_END; }
+    bool            genericFirmware         () const { return !px4Firmware() && !apmFirmware() && !ztFirmware(); }
     bool            connectionLost          () const { return _connectionLost; }
     bool            connectionLostEnabled   () const { return _connectionLostEnabled; }
     uint            messagesReceived        () { return _messagesReceived; }
