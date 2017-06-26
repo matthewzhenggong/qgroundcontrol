@@ -41,7 +41,7 @@ Rectangle {
     readonly property string _vehicleLabel:     qsTr("Vehicle")
 
     QGCPalette { id: qgcPal }
-    QFileDialogController { id: fileController }
+    QGCFileDialogController { id: fileController }
 
     Loader {
         id:              deferedload
@@ -83,17 +83,11 @@ Rectangle {
             anchors.right:  parent ? parent.right : undefined
             anchors.top:    parent ? parent.top   : undefined
             spacing:        _margin
-            SectionHeader {
-                id:         missionDefaultsSectionHeader
-                text:       qsTr("Mission Defaults")
-                checked:    true
-            }
 
             Column {
                 anchors.left:   parent.left
                 anchors.right:  parent.right
                 spacing:        _margin
-                visible:        missionDefaultsSectionHeader.checked
 
                 GridLayout {
                     anchors.left:   parent.left
@@ -128,7 +122,7 @@ Rectangle {
 
             CameraSection {
                 id:         cameraSection
-                checked:    true
+                checked:    missionItem.cameraSection.settingsSpecified
             }
 
             QGCLabel {
@@ -153,9 +147,10 @@ Rectangle {
                 spacing:        _margin
                 visible:        missionEndHeader.checked
 
-                FactCheckBox {
-                    text:   qsTr("Return To Launch")
-                    fact:   missionItem.missionEndRTL
+                QGCCheckBox {
+                    text:       qsTr("Return To Launch")
+                    checked:    missionItem.missionEndRTL
+                    onClicked:  missionItem.missionEndRTL = checked
                 }
             }
 
