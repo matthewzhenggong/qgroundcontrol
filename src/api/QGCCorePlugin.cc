@@ -171,10 +171,17 @@ bool QGCCorePlugin::adjustSettingMetaData(FactMetaData& metaData)
     } else if (metaData.name() == AppSettings::telemetrySaveName) {
 #if defined (__mobile__)
         metaData.setRawDefaultValue(false);
-        return false;
+        return true;
 #else
         metaData.setRawDefaultValue(true);
         return true;
+#endif
+#if defined(__ios__)
+    } else if (metaData.name() == AppSettings::savePathName) {
+        QString appName = qgcApp()->applicationName();
+        QDir rootDir = QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
+        metaData.setRawDefaultValue(rootDir.filePath(appName));
+        return false;
 #endif
     }
     return true; // Show setting in ui

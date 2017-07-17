@@ -61,18 +61,20 @@
     "shortDescription": "Amount of overlap between images in the forward facing direction.",
     "type":             "double",
     "decimalPlaces":    0,
+    "min":              0,
     "max":              85,
     "units":            "%",
-    "defaultValue":     10
+    "defaultValue":     70
 },
 {
     "name":             "SideOverlap",
     "shortDescription": "Amount of overlap between images in the side facing direction.",
     "type":             "double",
     "decimalPlaces":    0,
+    "min":              0,
     "max":              85,
     "units":            "%",
-    "defaultValue":     10
+    "defaultValue":     70
 },
 {
     "name":             "CameraSensorWidth",
@@ -130,7 +132,7 @@
     "name":             "CameraTriggerInTurnaround",
     "shortDescription": "Camera continues taking images in turnarounds.",
     "type":             "bool",
-    "defaultValue":     false
+    "defaultValue":     true
 },
 {
     "name":             "HoverAndCapture",

@@ -121,7 +121,8 @@ void CameraSection::appendSectionItems(QList<MissionItem*>& items, QObject* miss
                                             MAV_FRAME_MISSION,
                                             0,                                      // camera id, all cameras
                                             _cameraModeFact.rawValue().toDouble(),
-                                            NAN, NAN, NAN, NAN, NAN,                // param 3-7 unused
+                                            NAN,                                    // Audio off/on
+                                            NAN, NAN, NAN, NAN,                     // param 4-7 reserved
                                             true,                                   // autoContinue
                                             false,                                  // isCurrentItem
                                             missionItemParent);
@@ -154,9 +155,7 @@ void CameraSection::appendSectionItems(QList<MissionItem*>& items, QObject* miss
                                    0,                                               // Camera ID, all cameras
                                    _cameraPhotoIntervalTimeFact.rawValue().toInt(), // Interval
                                    0,                                               // Unlimited photo count
-                                   -1,                                              // Max horizontal resolution
-                                   -1,                                              // Max vertical resolution
-                                   0, 0,                                            // param 6-7 not used
+                                   NAN, NAN, NAN, NAN,                              // param 4-7 reserved
                                    true,                                            // autoContinue
                                    false,                                           // isCurrentItem
                                    missionItemParent);
@@ -167,7 +166,9 @@ void CameraSection::appendSectionItems(QList<MissionItem*>& items, QObject* miss
                                    MAV_CMD_DO_SET_CAM_TRIGG_DIST,
                                    MAV_FRAME_MISSION,
                                    _cameraPhotoIntervalDistanceFact.rawValue().toDouble(),  // Trigger distance
-                                   0, 0, 0, 0, 0, 0,                                        // param 2-7 not used
+                                   0,                                                       // No shutter integartion
+                                   1,                                                       // Trigger immediately
+                                   0, 0, 0, 0,                                              // param 4-7 not used
                                    true,                                                    // autoContinue
                                    false,                                                   // isCurrentItem
                                    missionItemParent);
@@ -178,11 +179,8 @@ void CameraSection::appendSectionItems(QList<MissionItem*>& items, QObject* miss
                                    MAV_CMD_VIDEO_START_CAPTURE,
                                    MAV_FRAME_MISSION,
                                    0,                           // camera id = 0, all cameras
-                                   -1,                          // Max FPS
-                                   -1,                          // Max horizontal resolution
-                                   -1,                          // Max vertical resolution
-                                   0,                           // Np CAMERA_CAPTURE_STATUS streaming
-                                   0, 0,                        // param 6-7 not used
+                                   0,                           // No CAMERA_CAPTURE_STATUS streaming
+                                   NAN, NAN, NAN, NAN, NAN,     // param 3-7 reserved
                                    true,                        // autoContinue
                                    false,                       // isCurrentItem
                                    missionItemParent);
@@ -192,10 +190,10 @@ void CameraSection::appendSectionItems(QList<MissionItem*>& items, QObject* miss
             item = new MissionItem(nextSequenceNumber++,
                                    MAV_CMD_VIDEO_STOP_CAPTURE,
                                    MAV_FRAME_MISSION,
-                                   0,                           // Camera ID, all cameras
-                                   0, 0, 0, 0, 0, 0,            // param 2-7 not used
-                                   true,                        // autoContinue
-                                   false,                       // isCurrentItem
+                                   0,                               // Camera ID, all cameras
+                                   NAN, NAN, NAN, NAN, NAN, NAN,    // param 2-7 reserved
+                                   true,                            // autoContinue
+                                   false,                           // isCurrentItem
                                    missionItemParent);
             break;
 
@@ -212,10 +210,10 @@ void CameraSection::appendSectionItems(QList<MissionItem*>& items, QObject* miss
             item = new MissionItem(nextSequenceNumber++,
                                    MAV_CMD_IMAGE_STOP_CAPTURE,
                                    MAV_FRAME_MISSION,
-                                   0,                           // camera id, all cameras
-                                   0, 0, 0, 0, 0, 0,            // param 2-7 not used
-                                   true,                        // autoContinue
-                                   false,                       // isCurrentItem
+                                   0,                               // camera id, all cameras
+                                   NAN, NAN, NAN, NAN, NAN, NAN,    // param 2-7 reserved
+                                   true,                            // autoContinue
+                                   false,                           // isCurrentItem
                                    missionItemParent);
             break;
 
@@ -223,14 +221,12 @@ void CameraSection::appendSectionItems(QList<MissionItem*>& items, QObject* miss
             item = new MissionItem(nextSequenceNumber++,
                                    MAV_CMD_IMAGE_START_CAPTURE,
                                    MAV_FRAME_MISSION,
-                                   0,                               // camera id = 0, all cameras
-                                   0,                              // Interval (none)
-                                   1,                              // Take 1 photo
-                                   -1,                             // Max horizontal resolution
-                                   -1,                             // Max vertical resolution
-                                   0, 0,                           // param 6-7 not used
-                                   true,                           // autoContinue
-                                   false,                         // isCurrentItem
+                                   0,                           // camera id = 0, all cameras
+                                   0,                           // Interval (none)
+                                   1,                           // Take 1 photo
+                                   NAN, NAN, NAN, NAN,          // param 4-7 reserved
+                                   true,                        // autoContinue
+                                   false,                       // isCurrentItem
                                    missionItemParent);
             break;
         }
@@ -265,7 +261,7 @@ bool CameraSection::_scanTakePhoto(QmlObjectListModel* visualItems, int scanInde
     if (item) {
         MissionItem& missionItem = item->missionItem();
         if ((MAV_CMD)item->command() == MAV_CMD_IMAGE_START_CAPTURE) {
-            if  (missionItem.param1() == 0 && missionItem.param2() == 0 && missionItem.param3() == 1 && missionItem.param4() == -1 && missionItem.param5() == -1 && missionItem.param6() == 0 && missionItem.param7() == 0) {
+            if (missionItem.param1() == 0 && missionItem.param2() == 0 && missionItem.param3() == 1) {
                 cameraAction()->setRawValue(TakePhoto);
                 visualItems->removeAt(scanIndex)->deleteLater();
                 return true;
@@ -282,7 +278,7 @@ bool CameraSection::_scanTakePhotosIntervalTime(QmlObjectListModel* visualItems,
     if (item) {
         MissionItem& missionItem = item->missionItem();
         if ((MAV_CMD)item->command() == MAV_CMD_IMAGE_START_CAPTURE) {
-            if (missionItem.param1() == 0 && missionItem.param2() >= 1 && missionItem.param3() == 0 && missionItem.param4() == -1 && missionItem.param5() == -1 && missionItem.param6() == 0 && missionItem.param7() == 0) {
+            if (missionItem.param1() == 0 && missionItem.param2() >= 1 && missionItem.param3() == 0) {
                 cameraAction()->setRawValue(TakePhotosIntervalTime);
                 cameraPhotoIntervalTime()->setRawValue(missionItem.param2());
                 visualItems->removeAt(scanIndex)->deleteLater();
@@ -305,7 +301,7 @@ bool CameraSection::_scanStopTakingPhotos(QmlObjectListModel* visualItems, int s
                     SimpleMissionItem* nextItem = visualItems->value<SimpleMissionItem*>(scanIndex + 1);
                     if (nextItem) {
                         MissionItem& nextMissionItem = nextItem->missionItem();
-                        if (nextMissionItem.command() == MAV_CMD_IMAGE_STOP_CAPTURE && nextMissionItem.param1() == 0 && nextMissionItem.param2() == 0 && nextMissionItem.param3() == 0 && nextMissionItem.param4() == 0 && nextMissionItem.param5() == 0 && nextMissionItem.param6() == 0 && nextMissionItem.param7() == 0) {
+                        if (nextMissionItem.command() == MAV_CMD_IMAGE_STOP_CAPTURE && nextMissionItem.param1() == 0) {
                             cameraAction()->setRawValue(StopTakingPhotos);
                             visualItems->removeAt(scanIndex)->deleteLater();
                             visualItems->removeAt(scanIndex)->deleteLater();
@@ -320,13 +316,31 @@ bool CameraSection::_scanStopTakingPhotos(QmlObjectListModel* visualItems, int s
     return false;
 }
 
-bool CameraSection::_scanTriggerDistance(QmlObjectListModel* visualItems, int scanIndex)
+bool CameraSection::_scanTriggerStartDistance(QmlObjectListModel* visualItems, int scanIndex)
 {
     SimpleMissionItem* item = visualItems->value<SimpleMissionItem*>(scanIndex);
     if (item) {
         MissionItem& missionItem = item->missionItem();
         if ((MAV_CMD)item->command() == MAV_CMD_DO_SET_CAM_TRIGG_DIST) {
-            if (missionItem.param1() >= 0 && missionItem.param2() == 0 && missionItem.param3() == 0 && missionItem.param4() == 0 && missionItem.param5() == 0 && missionItem.param6() == 0 && missionItem.param7() == 0) {
+            if (missionItem.param1() > 0 && missionItem.param2() == 0 && missionItem.param3() == 1 && missionItem.param4() == 0 && missionItem.param5() == 0 && missionItem.param6() == 0 && missionItem.param7() == 0) {
+                cameraAction()->setRawValue(TakePhotoIntervalDistance);
+                cameraPhotoIntervalDistance()->setRawValue(missionItem.param1());
+                visualItems->removeAt(scanIndex)->deleteLater();
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool CameraSection::_scanTriggerStopDistance(QmlObjectListModel* visualItems, int scanIndex)
+{
+    SimpleMissionItem* item = visualItems->value<SimpleMissionItem*>(scanIndex);
+    if (item) {
+        MissionItem& missionItem = item->missionItem();
+        if ((MAV_CMD)item->command() == MAV_CMD_DO_SET_CAM_TRIGG_DIST) {
+            if (missionItem.param1() == 0 && missionItem.param2() == 0 && missionItem.param3() == 0 && missionItem.param4() == 0 && missionItem.param5() == 0 && missionItem.param6() == 0 && missionItem.param7() == 0) {
                 cameraAction()->setRawValue(TakePhotoIntervalDistance);
                 cameraPhotoIntervalDistance()->setRawValue(missionItem.param1());
                 visualItems->removeAt(scanIndex)->deleteLater();
@@ -344,7 +358,7 @@ bool CameraSection::_scanTakeVideo(QmlObjectListModel* visualItems, int scanInde
     if (item) {
         MissionItem& missionItem = item->missionItem();
         if ((MAV_CMD)item->command() == MAV_CMD_VIDEO_START_CAPTURE) {
-            if (missionItem.param1() == 0 && missionItem.param2() == -1 && missionItem.param3() == -1 && missionItem.param4() == -1 && missionItem.param5() == 0 && missionItem.param6() == 0 && missionItem.param7() == 0) {
+            if (missionItem.param1() == 0 && missionItem.param2() == 0) {
                 cameraAction()->setRawValue(TakeVideo);
                 visualItems->removeAt(scanIndex)->deleteLater();
                 return true;
@@ -361,7 +375,7 @@ bool CameraSection::_scanStopTakingVideo(QmlObjectListModel* visualItems, int sc
     if (item) {
         MissionItem& missionItem = item->missionItem();
         if ((MAV_CMD)item->command() == MAV_CMD_VIDEO_STOP_CAPTURE) {
-            if (missionItem.param1() == 0 && missionItem.param2() == 0 && missionItem.param3() == 0 && missionItem.param4() == 0 && missionItem.param5() == 0 && missionItem.param6() == 0 && missionItem.param7() == 0) {
+            if (missionItem.param1() == 0) {
                 cameraAction()->setRawValue(StopTakingVideo);
                 visualItems->removeAt(scanIndex)->deleteLater();
                 return true;
@@ -422,7 +436,11 @@ bool CameraSection::scanForSection(QmlObjectListModel* visualItems, int scanInde
             foundCameraAction = true;
             continue;
         }
-        if (!foundCameraAction && _scanTriggerDistance(visualItems, scanIndex)) {
+        if (!foundCameraAction && _scanTriggerStartDistance(visualItems, scanIndex)) {
+            foundCameraAction = true;
+            continue;
+        }
+        if (!foundCameraAction && _scanTriggerStopDistance(visualItems, scanIndex)) {
             foundCameraAction = true;
             continue;
         }
