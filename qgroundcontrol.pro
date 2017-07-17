@@ -55,6 +55,8 @@ iOSBuild {
         count(APP_ERROR, 1) {
             error("Error building .plist file. 'ForAppStore' builds are only possible through the official build system.")
         }
+        QT               += qml-private
+        CONFIG           += qtquickcompiler
         QMAKE_INFO_PLIST  = $${BASEDIR}/ios/iOSForAppStore-Info.plist
         OTHER_FILES      += $${BASEDIR}/ios/iOSForAppStore-Info.plist
     } else {
@@ -70,6 +72,21 @@ LinuxBuild {
 
 WindowsBuild {
     RC_ICONS = resources/icons/qgroundcontrol.ico
+}
+
+#
+# Branding
+#
+
+QGC_APP_NAME        = "QGroundControl"
+QGC_ORG_NAME        = "QGroundControl.org"
+QGC_ORG_DOMAIN      = "org.qgroundcontrol"
+QGC_APP_DESCRIPTION = "Open source ground control app provided by QGroundControl dev team"
+QGC_APP_COPYRIGHT   = "Copyright (C) 2017 QGroundControl Development Team. All rights reserved."
+
+WindowsBuild {
+    QGC_INSTALLER_ICON          = "WindowsQGC.ico"
+    QGC_INSTALLER_HEADER_BITMAP = "installheader.bmp"
 }
 
 # Load additional config flags from user_config.pri
@@ -104,6 +121,14 @@ contains (CONFIG, QGC_DISABLE_CUSTOM_BUILD) {
         # CUSTOMHEADER = \"\\\"YourIQGCCorePluginDerivation.h\\\"\"
         include($$PWD/custom/custom.pri)
     }
+}
+
+WindowsBuild {
+    # Sets up application properties
+    QMAKE_TARGET_COMPANY        = "$${QGC_ORG_NAME}"
+    QMAKE_TARGET_DESCRIPTION    = "$${QGC_APP_DESCRIPTION}"
+    QMAKE_TARGET_COPYRIGHT      = "$${QGC_APP_COPYRIGHT}"
+    QMAKE_TARGET_PRODUCT        = "$${QGC_APP_NAME}"
 }
 
 #
@@ -224,15 +249,6 @@ ReleaseBuild {
     # We don't need the testlib console in release mode
     QT.testlib.CONFIG -= console
 }
-
-#
-# Branding
-#
-
-QMAKE_TARGET_COMPANY     = "qgroundcontrol.org"
-QMAKE_TARGET_DESCRIPTION = "Open source ground control app provided by QGroundControl dev team"
-QMAKE_TARGET_COPYRIGHT   = "Copyright (C) 2016 QGroundControl Development Team. All rights reserved."
-QMAKE_TARGET_PRODUCT     = "QGroundControl"
 
 #
 # Build-specific settings
